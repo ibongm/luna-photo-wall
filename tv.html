@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luna Photo Wall - TV Display</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            overflow: hidden;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #ffffff;
+        }
+        #slideshow-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        .slide {
+            max-width: 100%;
+            max-height: 100%;
+            position: absolute;
+            opacity: 0;
+            transition: opacity 1.5s ease-in-out;
+            object-fit: contain;
+        }
+        .slide.active {
+            opacity: 1;
+        }
+        /* Fallback / Welcome Screen Style */
+        #placeholder {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            border: 4px solid #e50914;
+            padding: 40px;
+            border-radius: 20px;
+            background: #121212;
+            box-shadow: 0 0 30px rgba(229, 9, 20, 0.3);
+        }
+        #placeholder h1 {
+            font-size: 4rem;
+            margin: 0 0 10px 0;
+            letter-spacing: 2px;
+        }
+        #placeholder p {
+            font-size: 1.8rem;
+            color: #aaa;
+            margin: 0;
+        }
+    </style>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+    <div id="slideshow-container">
+        <div id="placeholder">
+            <h1>Luna Photo Wall</h1>
+            <p>Scan the QR Code to see your photos up here! 📸</p>
+        </div>
+    </div>
+
+    <script>
+        // === PASTE YOUR SAME FIREBASE CONFIG OBJECT HERE ===
+        const firebaseConfig = {
+            apiKey: "AIzaSyACxw49eWeaIy-9Dieu0yaV28F7XdgG1hE",
+  authDomain: "lunaphotowall.firebaseapp.com",
+  projectId: "lunaphotowall",
+  storageBucket: "lunaphotowall.firebasestorage.app",
+  messagingSenderId: "890645449459",
+  appId: "1:890645449459:web:69ecef0decbbdf83f60586",
+  measurementId: "G-648MZV6NP4"
+};
+        };
+        // ===================================================
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let photosArray = [];
+        let currentIndex = 0;
+        let slideshowInterval = null;
+        
+        const container = document.getElementById('slideshow-container');
+        const placeholder = document.getElementById('placeholder');
+
+        // Real-time listener: Fires whenever the database changes (adds, deletes, nukes)
+        db.collection('photos')
+          .where('status', '==', 'approved')
+          .orderBy('timestamp', 'desc')
+          .onSnapshot((snapshot) => {
+              photosArray = [];
+              snapshot.forEach(doc => {
+                  photosArray.push(doc.data().url);
+              });
+
+              handleSlideshowUpdate();
+          }, (error) => {
+              console.error("Error listening to database changes: ", error);
+          });
+
+        function handleSlideshowUpdate() {
+            // Stop any existing timer loops
+            clearInterval(slideshowInterval);
+
+            if (photosArray.length === 0) {
+                // No approved photos left -> Show the fallback welcome message
+                container.innerHTML = '';
+                container.appendChild(placeholder);
+                return;
+            }
+
+            // Reset view to prepare images
+            container.innerHTML = '';
+            
+            // Render all current approved photos as hidden slides
+            photosArray.forEach((url, index) => {
+                const img = document.createElement('img');
+                img.src = url;
+                img.classList.add('slide');
+                if (index === 0) img.classList.add('active'); // Start with the first one
+                container.appendChild(img);
+            });
+
+            currentIndex = 0;
+
+            // Only loop if there's more than one photo
+            if (photosArray.length > 1) {
+                // Change slide every 6 seconds
+                slideshowInterval = setInterval(nextSlide, 6000);
+            }
+        }
+
+        function nextSlide() {
+            const slides = document.querySelectorAll('.slide');
+            if (slides.length === 0) return;
+
+            // Hide the current active slide
+            slides[currentIndex].classList.remove('active');
+
+            // Move to the next index, looping back to 0 if we hit the end
+            currentIndex = (currentIndex + 1) % slides.length;
+
+            // Show the next slide
+            slides[currentIndex].classList.add('active');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luna - Admin Panel</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border-top: 4px solid #e50914;
+        }
+        h1 { text-align: center; color: #e50914; margin-bottom: 25px; }
+        
+        /* Controls Section */
+        .controls-card {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .label-text { font-size: 18px; font-weight: bold; }
+        
+        /* Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc; transition: .4s; border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px;
+            background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #4caf50; }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        /* Buttons */
+        .btn-nuke {
+            background-color: #e50914; color: white; border: none; padding: 12px;
+            font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%;
+        }
+        .btn-nuke:hover { background-color: #b20710; }
+
+        /* Queue Section */
+        .queue-title { border-bottom: 2px solid #333; padding-bottom: 8px; margin-top: 25px; }
+        .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        .photo-card { background: #2a2a2a; padding: 10px; border-radius: 8px; text-align: center; }
+        .photo-card img { max-width: 100%; height: 150px; object-fit: cover; border-radius: 6px; }
+        .action-btns { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-action { flex: 1; padding: 8px; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        .btn-approve { background: #4caf50; color: white; }
+        .btn-reject { background: #e50914; color: white; }
+
+        /* Password Overlay */
+        #lock-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #121212;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999;
+        }
+        #lock-screen input {
+            padding: 12px; font-size: 18px; border-radius: 6px; border: 1px solid #333;
+            background: #2a2a2a; color: white; text-align: center; margin-bottom: 15px;
+        }
+    </style>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+    <div id="lock-screen">
+        <h2>Luna Admin Access</h2>
+        <input type="password" id="pin-input" placeholder="Enter Admin Password">
+        <button class="btn-action btn-approve" style="flex:none; width:150px;" onclick="checkPassword()">Unlock</button>
+    </div>
+
+    <div class="container">
+        <h1>Luna Dashboard</h1>
+
+        <div class="controls-card">
+            <div class="row">
+                <span class="label-text">Guest Photo Moderation</span>
+                <label class="switch">
+                    <input type="checkbox" id="mod-toggle" onchange="toggleModeration(this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <hr style="border: 0; border-top: 1px solid #444; margin: 5px 0;">
+            <button class="btn-nuke" onclick="nukeScreen()">💥 NUKE CURRENT TV SLIDESHOW</button>
+        </div>
+
+        <h3 class="queue-title">Pending Photos Approval Queue</h3>
+        <div class="photo-grid" id="queue-container">
+            </div>
+    </div>
+
+    <script>
+        // === PASTE YOUR SAME FIREBASE CONFIG OBJECT HERE ===
+        const firebaseConfig = {
+            apiKey: "AIzaSyACxw49eWeaIy-9Dieu0yaV28F7XdgG1hE",
+  authDomain: "lunaphotowall.firebaseapp.com",
+  projectId: "lunaphotowall",
+  storageBucket: "lunaphotowall.firebasestorage.app",
+  messagingSenderId: "890645449459",
+  appId: "1:890645449459:web:69ecef0decbbdf83f60586",
+  measurementId: "G-648MZV6NP4"
+};
+        };
+        // ===================================================
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Simple security gate: Change "Luna123" below to whatever password you want!
+        function checkPassword() {
+            const pin = document.getElementById('pin-input').value;
+            if (pin === "BongWallAdmin") { 
+                document.getElementById('lock-screen').style.display = 'none';
+                initAdminPanel();
+            } else {
+                alert("Incorrect Password!");
+            }
+        }
+
+        function initAdminPanel() {
+            // 1. Keep track of the current status of the Moderation Toggle switch
+            db.collection('settings').doc('admin').onSnapshot((doc) => {
+                if (doc.exists) {
+                    document.getElementById('mod-toggle').checked = doc.data().moderationMode;
+                }
+            });
+
+            // 2. Real-time viewer for any incoming photos waiting for approval
+            db.collection('photos')
+              .where('status', '==', 'pending')
+              .orderBy('timestamp', 'asc')
+              .onSnapshot((snapshot) => {
+                  const queueContainer = document.getElementById('queue-container');
+                  queueContainer.innerHTML = '';
+
+                  if (snapshot.empty) {
+                      queueContainer.innerHTML = '<p style="color:#aaa; grid-column: 1/-1; text-align:center;">No pending photos right now.</p>';
+                      return;
+                  }
+
+                  snapshot.forEach(doc => {
+                      const data = doc.data();
+                      const card = document.createElement('div');
+                      card.className = 'photo-card';
+                      card.innerHTML = `
+                          <img src="${data.url}">
+                          <div class="action-btns">
+                              <button class="btn-action btn-approve" onclick="updateStatus('${doc.id}', 'approved')">Approve</button>
+                              <button class="btn-action btn-reject" onclick="updateStatus('${doc.id}', 'rejected')">Delete</button>
+                          </div>
+                      `;
+                      queueContainer.appendChild(card);
+                  });
+              });
+        }
+
+        // Handle updating a single image's state
+        function updateStatus(docId, newStatus) {
+            db.collection('photos').doc(docId).update({
+                status: newStatus
+            });
+        }
+
+        // Handle setting the overall moderation mode toggle
+        function toggleModeration(isTrue) {
+            db.collection('settings').doc('admin').set({
+                moderationMode: isTrue
+            }, { merge: true });
+        }
+
+        // The Master Nuke Routine: Moves all active photos to an archived status instantly
+        async function nukeScreen() {
+            if (!confirm("Are you sure you want to clear all active photos off the TV screen?")) return;
+            
+            try {
+                const snapshot = await db.collection('photos').where('status', '==', 'approved').get();
+                const batch = db.batch();
+                
+                snapshot.forEach(doc => {
+                    batch.update(doc.ref, { status: 'archived' });
+                });
+                
+                await batch.commit();
+                alert("TV screen cleared successfully! 💥");
+            } catch (error) {
+                console.error("Nuke failed: ", error);
+            }
+        }
+    </script>
+</body>
+</html>
