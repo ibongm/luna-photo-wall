@@ -85,6 +85,28 @@
         #status { margin-top: 15px; font-weight: bold; font-size: 16px; color: #e50914; }
         #preview { max-width: 100%; max-height: 200px; margin-top: 20px; border-radius: 8px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
 
+        /* Poll Interactive UI System Styling */
+        .poll-card {
+            border-top: 4px solid #4caf50 !important;
+        }
+        .poll-opt-btn {
+            border: 2px solid #444;
+            background: #252525;
+            padding: 14px;
+            font-size: 14px;
+            color: white;
+            border-radius: 8px;
+            font-weight: bold;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+        }
+        .poll-opt-btn:hover {
+            border-color: #4caf50;
+            background: rgba(76, 175, 80, 0.05);
+        }
+
         .gallery-section { max-width: 400px; width: 100%; text-align: left; padding-bottom: 40px; }
         .gallery-title { font-size: 20px; margin-bottom: 15px; border-bottom: 2px solid #2a2a2a; padding-bottom: 8px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
         .gallery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
@@ -97,7 +119,6 @@
         .like-count { font-size: 12px; font-weight: bold; color: #bbb; }
         .like-btn { background: none; border: none; color: #ff3366; font-size: 16px; cursor: pointer; padding: 0; }
         
-        /* Load More Button Wrapper */
         .load-more-wrapper { text-align: center; margin-top: 25px; display: none; }
         .btn-load-more { width: auto; padding: 12px 30px; font-size: 14px; border-radius: 20px; }
     </style>
@@ -126,6 +147,12 @@
 
         <img id="preview" src="" alt="Image preview">
         <div id="status"></div>
+    </div>
+
+    <div class="container poll-card" id="poll-container" style="display: none;">
+        <h3 style="margin-top: 0; color: #4caf50; font-size: 20px; text-align: left; display: flex; align-items: center; gap: 8px;">📊 Live Bar Poll</h3>
+        <p id="poll-question-text" style="color: #ffffff; font-size: 16px; font-weight: bold; margin-bottom: 20px; text-align: left; line-height: 1.4;"></p>
+        <div id="poll-options-view" style="display: flex; flex-direction: column; gap: 12px; width: 100%;"></div>
     </div>
 
     <div class="gallery-section">
@@ -162,10 +189,9 @@
         cameraInput.addEventListener('change', (e) => processFile(e.target.files[0]));
         galleryInput.addEventListener('change', (e) => processFile(e.target.files[0]));
 
-        // Pagination Variables
         let photoLimit = 20;
 
-        // Bypasses Firebase index requirements by handling ordering & limits on the phone side
+        // Photo Feed Live Stream Setup
         db.collection('photos')
           .where('status', '==', 'approved')
           .onSnapshot((snapshot) => {
@@ -173,6 +199,71 @@
           }, (error) => {
               console.error("Error fetching photos: ", error);
           });
+
+        // LIVE REAL-TIME POLL SNAPSHOT LISTENER (OPTION A)
+        db.collection('settings').doc('poll').onSnapshot((doc) => {
+            const pollBox = document.getElementById('poll-container');
+            if (!doc.exists || !doc.data().active) {
+                pollBox.style.display = 'none';
+                return;
+            }
+
+            const pollData = doc.data();
+            pollBox.style.display = 'block';
+            document.getElementById('poll-question-text').textContent = pollData.question;
+
+            const optionsContainer = document.getElementById('poll-options-view');
+            optionsContainer.innerHTML = '';
+
+            const votedPolls = JSON.parse(localStorage.getItem('luna_voted_polls') || '[]');
+            const userHasVoted = votedPolls.includes(pollData.pollId);
+
+            // Calculate total votes safely
+            let totalVotes = 0;
+            const voteMap = pollData.votes || {};
+            pollData.options.forEach((_, idx) => {
+                totalVotes += (voteMap[idx] || 0);
+            });
+
+            pollData.options.forEach((optionText, idx) => {
+                if (!userHasVoted) {
+                    // Render Clickable Interactive Buttons
+                    const button = document.createElement('button');
+                    button.className = 'poll-opt-btn';
+                    button.textContent = optionText;
+                    button.onclick = () => submitPollVote(pollData.pollId, idx);
+                    optionsContainer.appendChild(button);
+                } else {
+                    // Render Dynamic Graphic Progress Bars
+                    const currentVoteCount = voteMap[idx] || 0;
+                    const computedPercent = totalVotes > 0 ? Math.round((currentVoteCount / totalVotes) * 100) : 0;
+
+                    const row = document.createElement('div');
+                    row.style.width = '100%';
+                    row.style.textAlign = 'left';
+                    row.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; font-weight: bold;">
+                            <span>${optionText}</span>
+                            <span style="color: #4caf50;">${computedPercent}% (${currentVoteCount})</span>
+                        </div>
+                        <div style="width: 100%; background: #121212; height: 12px; border-radius: 6px; overflow: hidden; border: 1px solid #333;">
+                            <div style="width: ${computedPercent}%; background: #4caf50; height: 100%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+                        </div>
+                    `;
+                    optionsContainer.appendChild(row);
+                }
+            });
+        });
+
+        function submitPollVote(pollId, selectedIndex) {
+            db.collection('settings').doc('poll').update({
+                [`votes.${selectedIndex}`]: firebase.firestore.FieldValue.increment(1)
+            }).then(() => {
+                let votedPolls = JSON.parse(localStorage.getItem('luna_voted_polls') || '[]');
+                votedPolls.push(pollId);
+                localStorage.setItem('luna_voted_polls', JSON.stringify(votedPolls));
+            }).catch(err => console.error("Poll Submission Error: ", err));
+        }
 
         function renderFeed(snapshot) {
             const feedContainer = document.getElementById('public-feed');
@@ -188,14 +279,12 @@
             let docsArray = [];
             snapshot.forEach(doc => { docsArray.push({ id: doc.id, ...doc.data() }); });
 
-            // Sort by newest timestamp safely in JavaScript
             docsArray.sort((a, b) => {
                 const timeA = a.timestamp ? a.timestamp.seconds : 0;
                 const timeB = b.timestamp ? b.timestamp.seconds : 0;
                 return timeB - timeA; 
             });
 
-            // Cut the list down to our current limit size (20, 40, 60, etc.)
             const visiblePhotos = docsArray.slice(0, photoLimit);
             const likedPhotos = JSON.parse(localStorage.getItem('luna_liked_ids') || '[]');
 
@@ -219,7 +308,6 @@
                 feedContainer.appendChild(card);
             });
 
-            // Show button only if there are actually more photos left to show
             if (docsArray.length > photoLimit) {
                 loadMoreWrapper.style.display = 'block';
             } else {
@@ -227,10 +315,8 @@
             }
         }
 
-        // Bumps the visible count and forces the feed window to redraw
         function loadMorePhotos() {
             photoLimit += 20;
-            // Get a fresh look at the current database collection state
             db.collection('photos').where('status', '==', 'approved').get().then(snapshot => {
                 renderFeed(snapshot);
             });
