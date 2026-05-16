@@ -27,6 +27,39 @@
         .vote-badge.active { opacity: 1; }
         .vote-badge span { color: var(--theme-accent); transition: color 0.5s ease; }
 
+        /* NEW: Floating Symmetrical QR Corner Card */
+        .qr-badge {
+            position: absolute; 
+            top: 40px; 
+            left: 40px; 
+            background: rgba(0, 0, 0, 0.75); 
+            border: 2px solid var(--theme-accent); 
+            padding: 12px; 
+            border-radius: 14px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
+            z-index: 999; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            transition: border-color 0.5s ease;
+        }
+        .qr-badge img { 
+            width: 110px; 
+            height: 110px; 
+            border-radius: 6px; 
+            background: #ffffff; /* Guarantees high contrast processing regardless of backing graphics */
+            padding: 6px; 
+            box-sizing: border-box;
+        }
+        .qr-label { 
+            color: #ffffff; 
+            font-size: 13px; 
+            font-weight: bold; 
+            margin-top: 8px; 
+            letter-spacing: 1px; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
         .welcome-screen { position: absolute; color: white; text-align: center; z-index: 10; }
         .welcome-screen h1 { font-size: 64px; margin-bottom: 10px; color: var(--theme-accent); text-shadow: 0 4px 10px rgba(0,0,0,0.8); transition: color 0.5s ease; }
         .welcome-screen p { font-size: 28px; color: #aaa; margin: 0; }
@@ -71,6 +104,11 @@
 <body>
 
     <div class="slideshow-container" id="slideshow">
+        <div class="qr-badge" id="tv-qr-card">
+            <img src="qr.png" alt="Upload QR">
+            <div class="qr-label">SCAN & SHARE 📸</div>
+        </div>
+
         <div class="welcome-screen" id="welcome-msg">
             <h1>Caffe Bar Luna</h1>
             <p>Scan the QR code to post your photos here! 📸</p>
@@ -136,10 +174,9 @@
         let currentSpeed = 5000;
         let isLeaderboardShowing = false;
         let globalTickerVisible = false;
-        let isLeaderboardConfigActive = false; // Tracks if toggle is enabled
+        let isLeaderboardConfigActive = false;
         const transparentPixel = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
-        // Operational Frequency Window (15 Minutes)
         const LEADERBOARD_INTERVAL = 15 * 60 * 1000; 
         const LEADERBOARD_DURATION = 15; 
 
@@ -172,23 +209,17 @@
                     document.documentElement.style.setProperty('--theme-accent', themePalette[data.colorTheme]);
                 }
                 
-                // Process the New Live Toggle state for Weekend Takeovers
                 const shouldBeActive = data.leaderboardActive || false;
                 if (shouldBeActive !== isLeaderboardConfigActive) {
                     isLeaderboardConfigActive = shouldBeActive;
                     if (isLeaderboardConfigActive) {
-                        // Start circuit loop if flipped on
                         if (!leaderboardCycleTimer) {
                             leaderboardCycleTimer = setInterval(triggerLeaderboardTakeover, LEADERBOARD_INTERVAL);
                         }
                     } else {
-                        // Clean up circuit loop if flipped off
                         clearInterval(leaderboardCycleTimer);
                         leaderboardCycleTimer = null;
-                        // If it flipped off right during a takeover screen, drop layout instantly
-                        if (isLeaderboardShowing) {
-                            forceDismissLeaderboard();
-                        }
+                        if (isLeaderboardShowing) { forceDismissLeaderboard(); }
                     }
                 }
 
@@ -222,6 +253,7 @@
             clearInterval(slideshowInterval);
             slideshowInterval = null;
             document.getElementById('ticker-bar').style.display = 'none';
+            document.getElementById('tv-qr-card').style.display = 'none'; // Temporarily hides the tracking card out of podium views
 
             let rankedArray = [...photosArray].sort((a, b) => b.likes - a.likes);
 
@@ -265,6 +297,7 @@
             clearInterval(countdownInterval);
             document.getElementById('leaderboard-screen').style.display = 'none';
             document.getElementById('flash-overlay').classList.remove('trigger');
+            document.getElementById('tv-qr-card').style.display = 'flex'; // Restores the scannable corner badge immediately
             isLeaderboardShowing = false;
             
             if (globalTickerVisible) document.getElementById('ticker-bar').style.display = 'block';
