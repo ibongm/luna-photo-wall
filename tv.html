@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Luna Photo Wall - TV Display</title>
+    <title>Luna TV - Photo Slideshow</title>
     <style>
         body, html {
             margin: 0;
@@ -13,9 +13,8 @@
             background-color: #000000;
             overflow: hidden;
             font-family: 'Segoe UI', Arial, sans-serif;
-            color: #ffffff;
         }
-        #slideshow-container {
+        .slideshow-container {
             width: 100%;
             height: 100%;
             display: flex;
@@ -24,38 +23,64 @@
             position: relative;
         }
         .slide {
-            max-width: 100%;
-            max-height: 100%;
             position: absolute;
+            width: 100%;
+            height: 100%;
             opacity: 0;
-            transition: opacity 1.5s ease-in-out;
-            object-fit: contain;
-        }
-        .slide.active {
-            opacity: 1;
-        }
-        /* Fallback / Welcome Screen Style */
-        #placeholder {
+            transition: opacity 1s ease-in-out;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
+        }
+        .slide.active { opacity: 1; }
+        
+        /* Core Image Controller */
+        .slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Default configuration */
+            transition: object-fit 0.3s ease;
+        }
+        /* Smart Crop Class */
+        .slide img.cover-mode {
+            object-fit: cover;
+        }
+
+        .welcome-screen {
+            position: absolute;
+            color: white;
             text-align: center;
-            border: 4px solid #e50914;
-            padding: 40px;
-            border-radius: 20px;
-            background: #121212;
-            box-shadow: 0 0 30px rgba(229, 9, 20, 0.3);
+            z-index: 10;
         }
-        #placeholder h1 {
-            font-size: 4rem;
-            margin: 0 0 10px 0;
-            letter-spacing: 2px;
+        .welcome-screen h1 { font-size: 64px; margin-bottom: 10px; color: #e50914; text-shadow: 0 4px 10px rgba(0,0,0,0.8); }
+        .welcome-screen p { font-size: 28px; color: #aaa; margin: 0; }
+
+        /* Smooth Scrolling Marquee Ticker */
+        .marquee-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            border-top: 3px solid #e50914;
+            color: #ffffff;
+            padding: 15px 0;
+            font-size: 32px;
+            font-weight: bold;
+            overflow: hidden;
+            white-space: nowrap;
+            box-sizing: border-box;
+            z-index: 99999;
+            display: none; /* Auto-hidden if text field is blank */
         }
-        #placeholder p {
-            font-size: 1.8rem;
-            color: #aaa;
-            margin: 0;
+        .marquee-text {
+            display: inline-block;
+            padding-left: 100%;
+            animation: scroll-marquee 25s linear infinite;
+        }
+        @keyframes scroll-marquee {
+            0% { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(-100%, 0, 0); }
         }
     </style>
 
@@ -64,106 +89,125 @@
 </head>
 <body>
 
-    <div id="slideshow-container">
-        <div id="placeholder">
-            <h1>Luna Photo Wall</h1>
-            <p>Scan the QR Code to see your photos up here! 📸</p>
+    <div class="slideshow-container" id="slideshow">
+        <div class="welcome-screen" id="welcome-msg">
+            <h1>Caffe Bar Luna</h1>
+            <p>Scan the QR code to post your photos here! 📸</p>
         </div>
+        <img id="display-img-1" class="slide" src="" alt="Slideshow image 1">
+        <img id="display-img-2" class="slide" src="" alt="Slideshow image 2">
+    </div>
+
+    <div class="marquee-container" id="ticker-bar">
+        <span class="marquee-text" id="ticker-text"></span>
     </div>
 
     <script>
         // === PASTE YOUR SAME FIREBASE CONFIG OBJECT HERE ===
         const firebaseConfig = {
-            apiKey: "AIzaSyACxw49eWeaIy-9Dieu0yaV28F7XdgG1hE",
-  authDomain: "lunaphotowall.firebaseapp.com",
-  projectId: "lunaphotowall",
-  storageBucket: "lunaphotowall.firebasestorage.app",
-  messagingSenderId: "890645449459",
-  appId: "1:890645449459:web:040fceaec5c2a9f6f60586",
-  measurementId: "G-53RH94EDMY"
-};
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
         // ===================================================
 
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
         let photosArray = [];
         let currentIndex = 0;
         let slideshowInterval = null;
-        
-        const container = document.getElementById('slideshow-container');
-        const placeholder = document.getElementById('placeholder');
+        let activeToggle = 1;
+        let isCoverMode = false;
 
-        // Real-time listener: Bypasses database restrictions by sorting inside the browser
+        // Listen for Approved Photos (Sorted in memory to bypass indexes)
         db.collection('photos')
           .where('status', '==', 'approved')
           .onSnapshot((snapshot) => {
               let docsArray = [];
-              
-              snapshot.forEach(doc => {
-                  docsArray.push(doc.data());
-              });
+              snapshot.forEach(doc => { docsArray.push(doc.data()); });
 
-              // Sort items by time (newest first) safely in JavaScript
               docsArray.sort((a, b) => {
                   const timeA = a.timestamp ? a.timestamp.seconds : 0;
                   const timeB = b.timestamp ? b.timestamp.seconds : 0;
                   return timeB - timeA;
               });
 
-              // Extract just the image strings for the slideshow loop
               photosArray = docsArray.map(item => item.url);
-
               handleSlideshowUpdate();
-          }, (error) => {
-              console.error("Error listening to database changes: ", error);
           });
 
-        function handleSlideshowUpdate() {
-            // Stop any existing timer loops
-            clearInterval(slideshowInterval);
+        // Live settings observer (Smart Crop & Promo Text)
+        db.collection('settings').doc('admin').onSnapshot((doc) => {
+            if (doc.exists) {
+                const data = doc.data();
+                
+                // Process Crop Mode
+                isCoverMode = data.widescreenFill || false;
+                const img1 = document.getElementById('display-img-1');
+                const img2 = document.getElementById('display-img-2');
+                
+                if (isCoverMode) {
+                    img1.classList.add('cover-mode');
+                    img2.classList.add('cover-mode');
+                } else {
+                    img1.classList.remove('cover-mode');
+                    img2.classList.remove('cover-mode');
+                }
 
+                // Process Promo Ticker Text
+                const tickerBar = document.getElementById('ticker-bar');
+                const tickerText = document.getElementById('ticker-text');
+                if (data.tickerText && data.tickerText.trim() !== "") {
+                    tickerText.textContent = data.tickerText;
+                    tickerBar.style.display = 'block';
+                } else {
+                    tickerBar.style.display = 'none';
+                }
+            }
+        });
+
+        function handleSlideshowUpdate() {
             if (photosArray.length === 0) {
-                // No approved photos left -> Show the fallback welcome message
-                container.innerHTML = '';
-                container.appendChild(placeholder);
+                document.getElementById('welcome-msg').style.display = 'block';
+                document.getElementById('display-img-1').classList.remove('active');
+                document.getElementById('display-img-2').classList.remove('active');
+                clearInterval(slideshowInterval);
+                slideshowInterval = null;
                 return;
             }
 
-            // Reset view to prepare images
-            container.innerHTML = '';
-            
-            // Render all current approved photos as hidden slides
-            photosArray.forEach((url, index) => {
-                const img = document.createElement('img');
-                img.src = url;
-                img.classList.add('slide');
-                if (index === 0) img.classList.add('active'); // Start with the first one
-                container.appendChild(img);
-            });
+            document.getElementById('welcome-msg').style.display = 'none';
 
-            currentIndex = 0;
-
-            // Only loop if there's more than one photo
-            if (photosArray.length > 1) {
-                // Change slide every 6 seconds
-                slideshowInterval = setInterval(nextSlide, 6000);
+            if (!slideshowInterval) {
+                // Instantly display first image
+                const activeImg = document.getElementById('display-img-' + activeToggle);
+                activeImg.src = photosArray[0];
+                activeImg.classList.add('active');
+                
+                currentIndex = 0;
+                // Spin up rotation cycle (Every 5 seconds)
+                slideshowInterval = setInterval(runRotation, 5000);
             }
         }
 
-        function nextSlide() {
-            const slides = document.querySelectorAll('.slide');
-            if (slides.length === 0) return;
+        function runRotation() {
+            if (photosArray.length <= 1) return;
 
-            // Hide the current active slide
-            slides[currentIndex].classList.remove('active');
+            currentIndex = (currentIndex + 1) % photosArray.length;
+            const nextImageSrc = photosArray[currentIndex];
 
-            // Move to the next index, looping back to 0 if we hit the end
-            currentIndex = (currentIndex + 1) % slides.length;
+            // Transition targets
+            const currentImg = document.getElementById('display-img-' + activeToggle);
+            activeToggle = activeToggle === 1 ? 2 : 1;
+            const nextImg = document.getElementById('display-img-' + activeToggle);
 
-            // Show the next slide
-            slides[currentIndex].classList.add('active');
+            nextImg.src = nextImageSrc;
+            nextImg.classList.add('active');
+            currentImg.classList.remove('active');
         }
     </script>
 </body>

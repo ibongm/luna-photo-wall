@@ -23,7 +23,6 @@
         }
         h1 { text-align: center; color: #e50914; margin-bottom: 25px; }
         
-        /* Controls Section */
         .controls-card {
             background: #2a2a2a;
             padding: 15px;
@@ -38,14 +37,30 @@
             justify-content: space-between;
             align-items: center;
         }
-        .label-text { font-size: 18px; font-weight: bold; }
+        .label-text { font-size: 16px; font-weight: bold; }
         
+        /* Input Box Styling */
+        .ticker-input-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background: #121212;
+            color: white;
+            font-size: 14px;
+        }
+
         /* Toggle Switch */
         .switch {
             position: relative;
             display: inline-block;
-            width: 60px;
-            height: 34px;
+            width: 50px;
+            height: 26px;
         }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider {
@@ -53,13 +68,16 @@
             background-color: #ccc; transition: .4s; border-radius: 34px;
         }
         .slider:before {
-            position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px;
+            position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px;
             background-color: white; transition: .4s; border-radius: 50%;
         }
         input:checked + .slider { background-color: #4caf50; }
-        input:checked + .slider:before { transform: translateX(26px); }
+        input:checked + .slider:before { transform: translateX(24px); }
 
         /* Buttons */
+        .btn-action { padding: 10px 15px; border: none; font-weight: bold; border-radius: 6px; cursor: pointer; }
+        .btn-approve { background: #4caf50; color: white; }
+        .btn-reject { background: #e50914; color: white; }
         .btn-nuke {
             background-color: #e50914; color: white; border: none; padding: 12px;
             font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%;
@@ -72,9 +90,6 @@
         .photo-card { background: #2a2a2a; padding: 10px; border-radius: 8px; text-align: center; }
         .photo-card img { max-width: 100%; height: 150px; object-fit: cover; border-radius: 6px; }
         .action-btns { display: flex; gap: 10px; margin-top: 10px; }
-        .btn-action { flex: 1; padding: 8px; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; }
-        .btn-approve { background: #4caf50; color: white; }
-        .btn-reject { background: #e50914; color: white; }
     </style>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -93,56 +108,74 @@
                     <span class="slider"></span>
                 </label>
             </div>
+            
+            <div class="row">
+                <span class="label-text">Widescreen Fill (Smart Crop)</span>
+                <label class="switch">
+                    <input type="checkbox" id="crop-toggle" onchange="toggleCrop(this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+            <hr style="border: 0; border-top: 1px solid #444; margin: 5px 0;">
+            
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <span class="label-text">Bottom Promo Ticker Text</span>
+                <div class="ticker-input-group">
+                    <input type="text" id="ticker-input" placeholder="Ex: Next Pub Quiz on Tuesday at 8 PM! 🏆">
+                    <button class="btn-action btn-approve" onclick="updateTicker()">Save</button>
+                </div>
+            </div>
+
             <hr style="border: 0; border-top: 1px solid #444; margin: 5px 0;">
             <button class="btn-nuke" onclick="nukeScreen()">💥 NUKE CURRENT TV SLIDESHOW</button>
         </div>
 
         <h3 class="queue-title">Pending Photos Approval Queue</h3>
-        <div class="photo-grid" id="queue-container">
-            </div>
+        <div class="photo-grid" id="queue-container"></div>
     </div>
 
     <script>
         // === PASTE YOUR SAME FIREBASE CONFIG OBJECT HERE ===
         const firebaseConfig = {
-            apiKey: "AIzaSyACxw49eWeaIy-9Dieu0yaV28F7XdgG1hE",
-  authDomain: "lunaphotowall.firebaseapp.com",
-  projectId: "lunaphotowall",
-  storageBucket: "lunaphotowall.firebasestorage.app",
-  messagingSenderId: "890645449459",
-  appId: "1:890645449459:web:040fceaec5c2a9f6f60586",
-  measurementId: "G-53RH94EDMY"
-};
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
         // ===================================================
 
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // Run the panel instantly on load
         initAdminPanel();
 
         function initAdminPanel() {
-            // 1. Listen to Moderation Toggle state
+            // Read real-time toggle states and ticker text
             db.collection('settings').doc('admin').onSnapshot((doc) => {
                 if (doc.exists) {
-                    document.getElementById('mod-toggle').checked = doc.data().moderationMode;
+                    const data = doc.data();
+                    document.getElementById('mod-toggle').checked = data.moderationMode || false;
+                    document.getElementById('crop-toggle').checked = data.widescreenFill || false;
+                    if (data.tickerText && document.activeElement !== document.getElementById('ticker-input')) {
+                        document.getElementById('ticker-input').value = data.tickerText;
+                    }
                 }
             });
 
-            // 2. Real-time viewer for pending photo queue
+            // Pending photo queue viewer
             db.collection('photos')
               .where('status', '==', 'pending')
               .orderBy('timestamp', 'asc')
               .onSnapshot((snapshot) => {
                   const queueContainer = document.getElementById('queue-container');
                   queueContainer.innerHTML = '';
-
                   if (snapshot.empty) {
                       queueContainer.innerHTML = '<p style="color:#aaa; grid-column: 1/-1; text-align:center;">No pending photos right now.</p>';
                       return;
                   }
-
                   snapshot.forEach(doc => {
                       const data = doc.data();
                       const card = document.createElement('div');
@@ -150,8 +183,8 @@
                       card.innerHTML = `
                           <img src="${data.url}">
                           <div class="action-btns">
-                              <button class="btn-action btn-approve" onclick="updateStatus('${doc.id}', 'approved')">Approve</button>
-                              <button class="btn-action btn-reject" onclick="updateStatus('${doc.id}', 'rejected')">Delete</button>
+                              <button class="btn-action btn-approve" style="flex:1;" onclick="updateStatus('${doc.id}', 'approved')">Approve</button>
+                              <button class="btn-action btn-reject" style="flex:1;" onclick="updateStatus('${doc.id}', 'rejected')">Delete</button>
                           </div>
                       `;
                       queueContainer.appendChild(card);
@@ -160,33 +193,32 @@
         }
 
         function updateStatus(docId, newStatus) {
-            db.collection('photos').doc(docId).update({
-                status: newStatus
-            });
+            db.collection('photos').doc(docId).update({ status: newStatus });
         }
 
         function toggleModeration(isTrue) {
-            db.collection('settings').doc('admin').set({
-                moderationMode: isTrue
-            }, { merge: true });
+            db.collection('settings').doc('admin').set({ moderationMode: isTrue }, { merge: true });
+        }
+
+        function toggleCrop(isTrue) {
+            db.collection('settings').doc('admin').set({ widescreenFill: isTrue }, { merge: true });
+        }
+
+        function updateTicker() {
+            const text = document.getElementById('ticker-input').value;
+            db.collection('settings').doc('admin').set({ tickerText: text }, { merge: true });
+            alert("Ticker text updated live on the TV screen! 📢");
         }
 
         async function nukeScreen() {
             if (!confirm("Are you sure you want to clear all active photos off the TV screen?")) return;
-            
             try {
                 const snapshot = await db.collection('photos').where('status', '==', 'approved').get();
                 const batch = db.batch();
-                
-                snapshot.forEach(doc => {
-                    batch.update(doc.ref, { status: 'archived' });
-                });
-                
+                snapshot.forEach(doc => { batch.update(doc.ref, { status: 'archived' }); });
                 await batch.commit();
                 alert("TV screen cleared successfully! 💥");
-            } catch (error) {
-                console.error("Nuke failed: ", error);
-            }
+            } catch (error) { console.error("Nuke failed: ", error); }
         }
     </script>
 </body>
