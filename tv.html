@@ -34,16 +34,11 @@
         }
         .slide.active { opacity: 1; }
         
-        /* Core Image Controller */
+        /* Forces standard uncropped display with sidebars */
         .slide img {
             width: 100%;
             height: 100%;
-            object-fit: contain; /* Default configuration */
-            transition: object-fit 0.3s ease;
-        }
-        /* Smart Crop Class */
-        .slide img.cover-mode {
-            object-fit: cover;
+            object-fit: contain;
         }
 
         .welcome-screen {
@@ -71,7 +66,7 @@
             white-space: nowrap;
             box-sizing: border-box;
             z-index: 99999;
-            display: none; /* Auto-hidden if text field is blank */
+            display: none;
         }
         .marquee-text {
             display: inline-block;
@@ -122,9 +117,8 @@
         let currentIndex = 0;
         let slideshowInterval = null;
         let activeToggle = 1;
-        let isCoverMode = false;
 
-        // Listen for Approved Photos (Sorted in memory to bypass indexes)
+        // Listen for Approved Photos
         db.collection('photos')
           .where('status', '==', 'approved')
           .onSnapshot((snapshot) => {
@@ -141,25 +135,10 @@
               handleSlideshowUpdate();
           });
 
-        // Live settings observer (Smart Crop & Promo Text)
+        // Live settings observer (Promo Text Only)
         db.collection('settings').doc('admin').onSnapshot((doc) => {
             if (doc.exists) {
                 const data = doc.data();
-                
-                // Process Crop Mode
-                isCoverMode = data.widescreenFill || false;
-                const img1 = document.getElementById('display-img-1');
-                const img2 = document.getElementById('display-img-2');
-                
-                if (isCoverMode) {
-                    img1.classList.add('cover-mode');
-                    img2.classList.add('cover-mode');
-                } else {
-                    img1.classList.remove('cover-mode');
-                    img2.classList.remove('cover-mode');
-                }
-
-                // Process Promo Ticker Text
                 const tickerBar = document.getElementById('ticker-bar');
                 const tickerText = document.getElementById('ticker-text');
                 if (data.tickerText && data.tickerText.trim() !== "") {
@@ -184,13 +163,11 @@
             document.getElementById('welcome-msg').style.display = 'none';
 
             if (!slideshowInterval) {
-                // Instantly display first image
                 const activeImg = document.getElementById('display-img-' + activeToggle);
                 activeImg.src = photosArray[0];
                 activeImg.classList.add('active');
                 
                 currentIndex = 0;
-                // Spin up rotation cycle (Every 5 seconds)
                 slideshowInterval = setInterval(runRotation, 5000);
             }
         }
@@ -201,7 +178,6 @@
             currentIndex = (currentIndex + 1) % photosArray.length;
             const nextImageSrc = photosArray[currentIndex];
 
-            // Transition targets
             const currentImg = document.getElementById('display-img-' + activeToggle);
             activeToggle = activeToggle === 1 ? 2 : 1;
             const nextImg = document.getElementById('display-img-' + activeToggle);

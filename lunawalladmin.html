@@ -39,7 +39,6 @@
         }
         .label-text { font-size: 16px; font-weight: bold; }
         
-        /* Input Box Styling */
         .ticker-input-group {
             display: flex;
             gap: 10px;
@@ -55,7 +54,6 @@
             font-size: 14px;
         }
 
-        /* Toggle Switch */
         .switch {
             position: relative;
             display: inline-block;
@@ -74,7 +72,6 @@
         input:checked + .slider { background-color: #4caf50; }
         input:checked + .slider:before { transform: translateX(24px); }
 
-        /* Buttons */
         .btn-action { padding: 10px 15px; border: none; font-weight: bold; border-radius: 6px; cursor: pointer; }
         .btn-approve { background: #4caf50; color: white; }
         .btn-reject { background: #e50914; color: white; }
@@ -84,7 +81,6 @@
         }
         .btn-nuke:hover { background-color: #b20710; }
 
-        /* Queue Section */
         .queue-title { border-bottom: 2px solid #333; padding-bottom: 8px; margin-top: 25px; }
         .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
         .photo-card { background: #2a2a2a; padding: 10px; border-radius: 8px; text-align: center; }
@@ -105,14 +101,6 @@
                 <span class="label-text">Guest Photo Moderation</span>
                 <label class="switch">
                     <input type="checkbox" id="mod-toggle" onchange="toggleModeration(this.checked)">
-                    <span class="slider"></span>
-                </label>
-            </div>
-            
-            <div class="row">
-                <span class="label-text">Widescreen Fill (Smart Crop)</span>
-                <label class="switch">
-                    <input type="checkbox" id="crop-toggle" onchange="toggleCrop(this.checked)">
                     <span class="slider"></span>
                 </label>
             </div>
@@ -154,19 +142,16 @@
         initAdminPanel();
 
         function initAdminPanel() {
-            // Read real-time toggle states and ticker text
             db.collection('settings').doc('admin').onSnapshot((doc) => {
                 if (doc.exists) {
                     const data = doc.data();
                     document.getElementById('mod-toggle').checked = data.moderationMode || false;
-                    document.getElementById('crop-toggle').checked = data.widescreenFill || false;
                     if (data.tickerText && document.activeElement !== document.getElementById('ticker-input')) {
                         document.getElementById('ticker-input').value = data.tickerText;
                     }
                 }
             });
 
-            // Pending photo queue viewer
             db.collection('photos')
               .where('status', '==', 'pending')
               .orderBy('timestamp', 'asc')
@@ -199,10 +184,6 @@
 
         function toggleModeration(isTrue) {
             db.collection('settings').doc('admin').set({ moderationMode: isTrue }, { merge: true });
-        }
-
-        function toggleCrop(isTrue) {
-            db.collection('settings').doc('admin').set({ widescreenFill: isTrue }, { merge: true });
         }
 
         function updateTicker() {
