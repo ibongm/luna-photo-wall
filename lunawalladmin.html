@@ -93,14 +93,17 @@
         }
         .btn-nuke:hover { background-color: #b20710; }
 
-        /* Archive Button Style */
         .btn-archive-toggle {
             background-color: #333333; color: white; border: 1px solid #444; padding: 12px;
             font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%;
             margin-top: 15px; display: block; text-align: center;
         }
         .btn-archive-toggle:hover { background-color: #444; }
+        
+        /* Updated Archive Grid Button Layouts */
         .btn-download { background: #007bff; color: white; flex: 1; }
+        .btn-delete-permanent { background: #3d0c0f; color: #ff4a5a; border: 1px solid #e50914; flex: 1; }
+        .btn-delete-permanent:hover { background: #e50914; color: white; }
 
         .queue-title { border-bottom: 2px solid #333; padding-bottom: 8px; margin-top: 25px; }
         .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
@@ -122,6 +125,14 @@
                 <span class="label-text">Guest Photo Moderation</span>
                 <label class="switch">
                     <input type="checkbox" id="mod-toggle" onchange="toggleModeration(this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="row">
+                <span class="label-text">Weekend Podium Takeover</span>
+                <label class="switch">
+                    <input type="checkbox" id="leaderboard-toggle" onchange="toggleLeaderboard(this.checked)">
                     <span class="slider"></span>
                 </label>
             </div>
@@ -196,6 +207,7 @@
                 if (doc.exists) {
                     const data = doc.data();
                     document.getElementById('mod-toggle').checked = data.moderationMode || false;
+                    document.getElementById('leaderboard-toggle').checked = data.leaderboardActive || false;
                     document.getElementById('speed-select').value = data.slideshowSpeed || "5";
                     document.getElementById('theme-select').value = data.colorTheme || "black-red";
                     if (data.tickerText && document.activeElement !== document.getElementById('ticker-input')) {
@@ -240,7 +252,6 @@
               });
         }
 
-        // On-demand fetch routine to load historical data safely
         function toggleArchiveView() {
             const archiveSection = document.getElementById('archive-section');
             const archiveBtn = document.getElementById('archive-btn');
@@ -249,7 +260,6 @@
                 archiveSection.style.display = "block";
                 archiveBtn.textContent = "📁 Close History Archive";
                 
-                // Only build database sync loop once to prevent duplicate readings
                 if (!archiveLoaded) {
                     loadPhotoArchive();
                     archiveLoaded = true;
@@ -261,7 +271,6 @@
         }
 
         function loadPhotoArchive() {
-            // Pull both live approved photos and previously "nuked" archived photos
             db.collection('photos')
               .where('status', 'in', ['approved', 'archived'])
               .onSnapshot((snapshot) => {
@@ -276,7 +285,6 @@
                   let docsArray = [];
                   snapshot.forEach(doc => { docsArray.push({ id: doc.id, ...doc.data() }); });
 
-                  // Sort archive by newest upload first
                   docsArray.sort((a, b) => {
                       const timeA = a.timestamp ? a.timestamp.seconds : 0;
                       const timeB = b.timestamp ? b.timestamp.seconds : 0;
@@ -286,13 +294,13 @@
                   docsArray.forEach(item => {
                       const card = document.createElement('div');
                       card.className = 'photo-card';
-                      
-                      // Render card layout with custom parameters passed straight to the download engine
+                      // FIXED: Added an incremental structural delete button next to download controls
                       card.innerHTML = `
                           <img src="${item.url}">
-                          <div style="font-size: 11px; color: #888; margin-top: 5px;">Status: ${item.status.toUpperCase()}</div>
+                          <div style="font-size: 11px; color: #888; margin-top: 5px;">Status: ${item.status.toUpperCase()} | ❤️ ${item.likes || 0}</div>
                           <div class="action-btns">
-                              <button class="btn-action btn-download" onclick="downloadBase64('${item.url}', 'luna_${item.id}.jpg')">📥 Download</button>
+                              <button class="btn-action btn-download" onclick="downloadBase64('${item.url}', 'luna_${item.id}.jpg')">📥 Save</button>
+                              <button class="btn-action btn-delete-permanent" onclick="deletePhotoPermanently('${item.id}')">❌ Delete</button>
                           </div>
                       `;
                       archiveContainer.appendChild(card);
@@ -300,7 +308,6 @@
               });
         }
 
-        // Native download wrapper trick
         function downloadBase64(base64Data, filename) {
             const link = document.createElement('a');
             link.href = base64Data;
@@ -310,12 +317,27 @@
             document.body.removeChild(link);
         }
 
+        // NEW: Permanent database deletion logic block
+        function deletePhotoPermanently(docId) {
+            if (!confirm("Are you sure you want to PERMANENTLY delete this photo from the database? This cannot be undone and will remove it from the screen, archive, and user feed!")) return;
+            
+            db.collection('photos').doc(docId).delete()
+              .then(() => {
+                  alert("Photo completely removed from the cloud database! 🧹");
+              })
+              .catch(err => console.error("Permanent deletion failed: ", err));
+        }
+
         function updateStatus(docId, newStatus) {
             db.collection('photos').doc(docId).update({ status: newStatus });
         }
 
         function toggleModeration(isTrue) {
             db.collection('settings').doc('admin').set({ moderationMode: isTrue }, { merge: true });
+        }
+
+        function toggleLeaderboard(isTrue) {
+            db.collection('settings').doc('admin').set({ leaderboardActive: isTrue }, { merge: true });
         }
 
         function updateSpeed(seconds) {

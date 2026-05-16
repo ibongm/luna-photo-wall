@@ -37,15 +37,11 @@
         .marquee-text { display: inline-block; padding-left: 100%; animation: scroll-marquee 25s linear infinite; }
         @keyframes scroll-marquee { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
 
-        /* =============================================
-           NEW LEADERBOARD INTERSTITIAL TAKEOVER STYLES
-           ============================================= */
         .leaderboard-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 5, 0.96); backdrop-filter: blur(15px); z-index: 999999; display: none; flex-direction: column; justify-content: center; align-items: center; color: white; animation: fade-in-view 0.5s ease forwards;
         }
         @keyframes fade-in-view { from { opacity: 0; } to { opacity: 1; } }
 
-        /* The Shutter Flash Effect Components */
         .flash-bang {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; z-index: 9999999; pointer-events: none; opacity: 0;
         }
@@ -54,12 +50,10 @@
 
         .leaderboard-title { font-size: 56px; color: var(--theme-accent); font-weight: 900; letter-spacing: 2px; margin-bottom: 40px; text-transform: uppercase; text-shadow: 0 4px 12px rgba(0,0,0,0.5); transition: color 0.5s ease; }
         
-        /* Podium Classic Layout Matrix */
         .podium-container { display: flex; align-items: flex-end; justify-content: center; gap: 30px; width: 90%; max-width: 1200px; height: 50%; margin-bottom: 40px; }
         .podium-card { background: #181818; border-radius: 15px; padding: 20px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.7); position: relative; box-sizing: border-box; }
         .podium-card img { width: 100%; height: 240px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
         
-        /* Dimensional scales sorting row positions */
         .gold { width: 34%; height: 100%; border-top: 5px solid #d4af37; order: 2; }
         .silver { width: 30%; height: 88%; border-top: 5px solid #b4b4b4; order: 1; }
         .bronze { width: 30%; height: 80%; border-top: 5px solid #cd7f32; order: 3; }
@@ -137,15 +131,17 @@
         let currentIndex = 0;
         let slideshowInterval = null;
         let leaderboardCycleTimer = null;
+        let countdownInterval = null;
         let activeToggle = 1;
         let currentSpeed = 5000;
         let isLeaderboardShowing = false;
         let globalTickerVisible = false;
+        let isLeaderboardConfigActive = false; // Tracks if toggle is enabled
         const transparentPixel = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
-        // CONFIG TIME FREQUENCY WINDOWS (15 Minutes Operational Loop Default)
-        const LEADERBOARD_INTERVAL = 15 * 60 * 1000; // Change to 30000 (30 seconds) to test instantly!
-        const LEADERBOARD_DURATION = 15; // Time shown on screen in seconds
+        // Operational Frequency Window (15 Minutes)
+        const LEADERBOARD_INTERVAL = 15 * 60 * 1000; 
+        const LEADERBOARD_DURATION = 15; 
 
         const themePalette = {
             'black-red': '#e50914', 'black-gold': '#d4af37', 'electric-cyber': '#00f0ff', 'pub-emerald': '#00a86b', 'sunset-lounge': '#ff5722'
@@ -175,6 +171,27 @@
                 if (data.colorTheme && themePalette[data.colorTheme]) {
                     document.documentElement.style.setProperty('--theme-accent', themePalette[data.colorTheme]);
                 }
+                
+                // Process the New Live Toggle state for Weekend Takeovers
+                const shouldBeActive = data.leaderboardActive || false;
+                if (shouldBeActive !== isLeaderboardConfigActive) {
+                    isLeaderboardConfigActive = shouldBeActive;
+                    if (isLeaderboardConfigActive) {
+                        // Start circuit loop if flipped on
+                        if (!leaderboardCycleTimer) {
+                            leaderboardCycleTimer = setInterval(triggerLeaderboardTakeover, LEADERBOARD_INTERVAL);
+                        }
+                    } else {
+                        // Clean up circuit loop if flipped off
+                        clearInterval(leaderboardCycleTimer);
+                        leaderboardCycleTimer = null;
+                        // If it flipped off right during a takeover screen, drop layout instantly
+                        if (isLeaderboardShowing) {
+                            forceDismissLeaderboard();
+                        }
+                    }
+                }
+
                 if (data.slideshowSpeed) {
                     const newSpeed = data.slideshowSpeed * 1000;
                     if (newSpeed !== currentSpeed) {
@@ -198,24 +215,16 @@
             }
         });
 
-        // Initialize Master Takeover Schedule Window
-        leaderboardCycleTimer = setInterval(triggerLeaderboardTakeover, LEADERBOARD_INTERVAL);
-
         function triggerLeaderboardTakeover() {
-            // Safety valve: Skip takeover if no photos exist or if one is already active
-            if (photosArray.length === 0 || isLeaderboardShowing) return;
+            if (photosArray.length === 0 || isLeaderboardShowing || !isLeaderboardConfigActive) return;
 
             isLeaderboardShowing = true;
-            
-            // 1. Freeze running presentation loops
             clearInterval(slideshowInterval);
             slideshowInterval = null;
             document.getElementById('ticker-bar').style.display = 'none';
 
-            // 2. Rank collection metrics by score descending
             let rankedArray = [...photosArray].sort((a, b) => b.likes - a.likes);
 
-            // 3. Bind elements up to podium ranks
             for (let i = 1; i <= 3; i++) {
                 const card = document.getElementById('card-rank-' + i);
                 const img = document.getElementById('img-rank-' + i);
@@ -228,42 +237,42 @@
                     voteLabel.textContent = votes + (votes === 1 ? ' vote' : ' votes');
                     card.style.visibility = 'visible';
                 } else {
-                    card.style.visibility = 'hidden'; // Hide the position card if less than 3 photos exist
+                    card.style.visibility = 'hidden';
                 }
             }
 
-            // 4. Reveal panel and engage hardware flash trigger animation
             const screenOverlay = document.getElementById('leaderboard-screen');
             const flashOverlay = document.getElementById('flash-overlay');
             
             screenOverlay.style.display = 'flex';
             flashOverlay.classList.add('trigger');
 
-            // 5. Spin up countdown tracker sequence
             let remainingSeconds = LEADERBOARD_DURATION;
             const timerLabel = document.getElementById('leaderboard-countdown');
             timerLabel.textContent = `Returning to slideshow in ${remainingSeconds}s...`;
 
-            let countdownInterval = setInterval(() => {
+            countdownInterval = setInterval(() => {
                 remainingSeconds--;
                 if (remainingSeconds <= 0) {
-                    clearInterval(countdownInterval);
-                    
-                    // Collapse panels, clear flash trigger classes, and resume loops
-                    screenOverlay.style.display = 'none';
-                    flashOverlay.classList.remove('trigger');
-                    isLeaderboardShowing = false;
-                    
-                    if (globalTickerVisible) document.getElementById('ticker-bar').style.display = 'block';
-                    handleSlideshowUpdate();
+                    forceDismissLeaderboard();
                 } else {
                     timerLabel.textContent = `Returning to slideshow in ${remainingSeconds}s...`;
                 }
             }, 1000);
         }
 
+        function forceDismissLeaderboard() {
+            clearInterval(countdownInterval);
+            document.getElementById('leaderboard-screen').style.display = 'none';
+            document.getElementById('flash-overlay').classList.remove('trigger');
+            isLeaderboardShowing = false;
+            
+            if (globalTickerVisible) document.getElementById('ticker-bar').style.display = 'block';
+            handleSlideshowUpdate();
+        }
+
         function handleSlideshowUpdate() {
-            if (isLeaderboardShowing) return; // Freeze adjustments if leaderboard is currently active
+            if (isLeaderboardShowing) return;
 
             if (photosArray.length === 0) {
                 document.getElementById('welcome-msg').style.display = 'block';
