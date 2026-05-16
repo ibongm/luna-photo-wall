@@ -113,9 +113,10 @@
         let currentIndex = 0;
         let slideshowInterval = null;
         let activeToggle = 1;
+        let currentSpeed = 5000; // Track dynamic timeline configuration (Default 5s)
         const transparentPixel = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
-        // Listen for Approved Photos
+        // Listen for Approved Photos (Safe local memory sorting)
         db.collection('photos')
           .where('status', '==', 'approved')
           .onSnapshot((snapshot) => {
@@ -132,10 +133,25 @@
               handleSlideshowUpdate();
           });
 
-        // Live settings observer (Promo Text Only)
+        // Live settings observer (Dynamic Speed Timer & Promo Text)
         db.collection('settings').doc('admin').onSnapshot((doc) => {
             if (doc.exists) {
                 const data = doc.data();
+                
+                // 1. Process Dynamically Adjusted Timeline Window
+                if (data.slideshowSpeed) {
+                    const newSpeed = data.slideshowSpeed * 1000;
+                    if (newSpeed !== currentSpeed) {
+                        currentSpeed = newSpeed;
+                        // If the engine loop is running, drop anchor and rebuild interval live
+                        if (slideshowInterval) {
+                            clearInterval(slideshowInterval);
+                            slideshowInterval = setInterval(runRotation, currentSpeed);
+                        }
+                    }
+                }
+
+                // 2. Process Promo Ticker Text
                 const tickerBar = document.getElementById('ticker-bar');
                 const tickerText = document.getElementById('ticker-text');
                 if (data.tickerText && data.tickerText.trim() !== "") {
@@ -167,7 +183,8 @@
                 activeImg.classList.add('active');
                 
                 currentIndex = 0;
-                slideshowInterval = setInterval(runRotation, 5000);
+                // Spin up rotation tracking using currently synced timeline configuration
+                slideshowInterval = setInterval(runRotation, currentSpeed);
             }
         }
 

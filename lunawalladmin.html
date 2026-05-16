@@ -53,6 +53,17 @@
             color: white;
             font-size: 14px;
         }
+        
+        select {
+            padding: 8px 12px;
+            border-radius: 6px;
+            background: #121212;
+            color: white;
+            border: 1px solid #444;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
 
         .switch {
             position: relative;
@@ -105,6 +116,16 @@
                 </label>
             </div>
             
+            <div class="row">
+                <span class="label-text">Slideshow Rotation Speed</span>
+                <select id="speed-select" onchange="updateSpeed(this.value)">
+                    <option value="3">⚡ Fast (3s)</option>
+                    <option value="5">▶ Normal (5s)</option>
+                    <option value="10">🐢 Slow (10s)</option>
+                    <option value="15">⏳ Relaxed (15s)</option>
+                </select>
+            </div>
+            
             <hr style="border: 0; border-top: 1px solid #444; margin: 5px 0;">
             
             <div style="display: flex; flex-direction: column; gap: 5px;">
@@ -146,13 +167,14 @@
                 if (doc.exists) {
                     const data = doc.data();
                     document.getElementById('mod-toggle').checked = data.moderationMode || false;
+                    document.getElementById('speed-select').value = data.slideshowSpeed || "5";
                     if (data.tickerText && document.activeElement !== document.getElementById('ticker-input')) {
                         document.getElementById('ticker-input').value = data.tickerText;
                     }
                 }
             });
 
-            // Real-time listener: Bypasses database blocks by sorting locally on your phone
+            // Pending photo queue viewer (Safe local sort)
             db.collection('photos')
               .where('status', '==', 'pending')
               .onSnapshot((snapshot) => {
@@ -165,19 +187,14 @@
                   }
 
                   let docsArray = [];
-                  snapshot.forEach(doc => {
-                      // Save the document ID alongside the data so buttons still work
-                      docsArray.push({ id: doc.id, ...doc.data() });
-                  });
+                  snapshot.forEach(doc => { docsArray.push({ id: doc.id, ...doc.data() }); });
 
-                  // Sort items by time (oldest first, so first uploaded is first in line)
                   docsArray.sort((a, b) => {
                       const timeA = a.timestamp ? a.timestamp.seconds : 0;
                       const timeB = b.timestamp ? b.timestamp.seconds : 0;
                       return timeA - timeB;
                   });
 
-                  // Render the sorted pending pictures into your dashboard queue
                   docsArray.forEach(item => {
                       const card = document.createElement('div');
                       card.className = 'photo-card';
@@ -199,6 +216,11 @@
 
         function toggleModeration(isTrue) {
             db.collection('settings').doc('admin').set({ moderationMode: isTrue }, { merge: true });
+        }
+
+        // Write selection changes directly to cloud database
+        function updateSpeed(seconds) {
+            db.collection('settings').doc('admin').set({ slideshowSpeed: parseInt(seconds) }, { merge: true });
         }
 
         function updateTicker() {
