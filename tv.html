@@ -21,17 +21,35 @@
         }
         .slide.active { opacity: 1; }
 
+       /* REPOSITIONED: Changed top/right to bottom/left */
         .vote-badge {
-            position: absolute; top: 40px; right: 40px; background: rgba(0, 0, 0, 0.75); border: 2px solid var(--theme-accent); color: #ffffff; padding: 12px 24px; border-radius: 50px; font-size: 36px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 999; opacity: 0; transition: opacity 1s ease-in-out, border-color 0.5s ease; display: flex; align-items: center; gap: 12px;
+            position: absolute; 
+            bottom: 90px; /* Sits at the exact same height as the QR code */
+            left: 40px; 
+            background: rgba(0, 0, 0, 0.75); 
+            border: 2px solid var(--theme-accent); 
+            color: #ffffff; 
+            padding: 12px 24px; 
+            border-radius: 50px; 
+            font-size: 36px; 
+            font-weight: bold; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
+            z-index: 999; 
+            opacity: 0; 
+            transition: opacity 1s ease-in-out, border-color 0.5s ease; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px;
         }
         .vote-badge.active { opacity: 1; }
         .vote-badge span { color: var(--theme-accent); transition: color 0.5s ease; }
 
         /* NEW: Floating Symmetrical QR Corner Card */
+        /* REPOSITIONED: Changed top/left to bottom/right */
         .qr-badge {
             position: absolute; 
-            top: 40px; 
-            left: 40px; 
+            bottom: 90px; /* Sits cleanly right above the scrolling ticker */
+            right: 40px; 
             background: rgba(0, 0, 0, 0.75); 
             border: 2px solid var(--theme-accent); 
             padding: 12px; 
@@ -43,11 +61,12 @@
             align-items: center;
             transition: border-color 0.5s ease;
         }
+        /* ENLARGED: Bumped size from 110px to 150px */
         .qr-badge img { 
-            width: 110px; 
-            height: 110px; 
+            width: 150px; 
+            height: 150px; 
             border-radius: 6px; 
-            background: #ffffff; /* Guarantees high contrast processing regardless of backing graphics */
+            background: #ffffff; 
             padding: 6px; 
             box-sizing: border-box;
         }
