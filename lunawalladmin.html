@@ -152,25 +152,40 @@
                 }
             });
 
+            // Real-time listener: Bypasses database blocks by sorting locally on your phone
             db.collection('photos')
               .where('status', '==', 'pending')
-              .orderBy('timestamp', 'asc')
               .onSnapshot((snapshot) => {
                   const queueContainer = document.getElementById('queue-container');
                   queueContainer.innerHTML = '';
+                  
                   if (snapshot.empty) {
                       queueContainer.innerHTML = '<p style="color:#aaa; grid-column: 1/-1; text-align:center;">No pending photos right now.</p>';
                       return;
                   }
+
+                  let docsArray = [];
                   snapshot.forEach(doc => {
-                      const data = doc.data();
+                      // Save the document ID alongside the data so buttons still work
+                      docsArray.push({ id: doc.id, ...doc.data() });
+                  });
+
+                  // Sort items by time (oldest first, so first uploaded is first in line)
+                  docsArray.sort((a, b) => {
+                      const timeA = a.timestamp ? a.timestamp.seconds : 0;
+                      const timeB = b.timestamp ? b.timestamp.seconds : 0;
+                      return timeA - timeB;
+                  });
+
+                  // Render the sorted pending pictures into your dashboard queue
+                  docsArray.forEach(item => {
                       const card = document.createElement('div');
                       card.className = 'photo-card';
                       card.innerHTML = `
-                          <img src="${data.url}">
+                          <img src="${item.url}">
                           <div class="action-btns">
-                              <button class="btn-action btn-approve" style="flex:1;" onclick="updateStatus('${doc.id}', 'approved')">Approve</button>
-                              <button class="btn-action btn-reject" style="flex:1;" onclick="updateStatus('${doc.id}', 'rejected')">Delete</button>
+                              <button class="btn-action btn-approve" style="flex:1;" onclick="updateStatus('${item.id}', 'approved')">Approve</button>
+                              <button class="btn-action btn-reject" style="flex:1;" onclick="updateStatus('${item.id}', 'rejected')">Delete</button>
                           </div>
                       `;
                       queueContainer.appendChild(card);
