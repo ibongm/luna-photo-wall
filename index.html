@@ -164,83 +164,77 @@
 
         // Pagination Variables
         let photoLimit = 20;
-        let unsubscribeFeed = null; // Keeps track of our active listener to prevent duplicates
 
-        // Extracted the stream to a reusable function for pagination
-        function initFeedStream() {
-            // Cancel the old listener if it exists before creating a new one
-            if (unsubscribeFeed) {
-                unsubscribeFeed();
+        // Bypasses Firebase index requirements by handling ordering & limits on the phone side
+        db.collection('photos')
+          .where('status', '==', 'approved')
+          .onSnapshot((snapshot) => {
+              renderFeed(snapshot);
+          }, (error) => {
+              console.error("Error fetching photos: ", error);
+          });
+
+        function renderFeed(snapshot) {
+            const feedContainer = document.getElementById('public-feed');
+            const loadMoreWrapper = document.getElementById('loadMoreWrapper');
+            feedContainer.innerHTML = '';
+            
+            if (snapshot.empty) {
+                feedContainer.innerHTML = '<p style="color:#666; grid-column: 1/-1; text-align:center; padding: 20px;">No photos on screen yet. Be the first!</p>';
+                loadMoreWrapper.style.display = 'none';
+                return;
             }
 
-            // Notice the new .orderBy() and .limit()
-            // IMPORTANT: Check console. If this throws an error, click the Firebase link to create an index!
-            unsubscribeFeed = db.collection('photos')
-              .where('status', '==', 'approved')
-              .orderBy('timestamp', 'desc')
-              .limit(photoLimit)
-              .onSnapshot((snapshot) => {
-                  const feedContainer = document.getElementById('public-feed');
-                  const loadMoreWrapper = document.getElementById('loadMoreWrapper');
-                  feedContainer.innerHTML = '';
-                  
-                  if (snapshot.empty) {
-                      feedContainer.innerHTML = '<p style="color:#666; grid-column: 1/-1; text-align:center; padding: 20px;">No photos on screen yet. Be the first!</p>';
-                      loadMoreWrapper.style.display = 'none';
-                      return;
-                  }
+            let docsArray = [];
+            snapshot.forEach(doc => { docsArray.push({ id: doc.id, ...doc.data() }); });
 
-                  let docsArray = [];
-                  snapshot.forEach(doc => { docsArray.push({ id: doc.id, ...doc.data() }); });
+            // Sort by newest timestamp safely in JavaScript
+            docsArray.sort((a, b) => {
+                const timeA = a.timestamp ? a.timestamp.seconds : 0;
+                const timeB = b.timestamp ? b.timestamp.seconds : 0;
+                return timeB - timeA; 
+            });
 
-                  // FIX: The calculation is now safely on the same line as the return keyword
-                  docsArray.sort((a, b) => {
-                      const timeA = a.timestamp ? a.timestamp.seconds : 0;
-                      const timeB = b.timestamp ? b.timestamp.seconds : 0;
-                      return timeB - timeA; 
-                  });
+            // Cut the list down to our current limit size (20, 40, 60, etc.)
+            const visiblePhotos = docsArray.slice(0, photoLimit);
+            const likedPhotos = JSON.parse(localStorage.getItem('luna_liked_ids') || '[]');
 
-                  const likedPhotos = JSON.parse(localStorage.getItem('luna_liked_ids') || '[]');
+            visiblePhotos.forEach(item => {
+                const isLiked = likedPhotos.includes(item.id);
+                const card = document.createElement('div');
+                card.className = 'gallery-card';
+                
+                const captionMarkup = item.caption ? `<div class="card-caption-text">"${item.caption}"</div>` : '';
+                
+                card.innerHTML = `
+                    <img src="${item.url}">
+                    <div class="card-info-pane">
+                        ${captionMarkup}
+                        <div class="like-bar">
+                            <span class="like-count" id="count-${item.id}">❤️ ${item.likes || 0}</span>
+                            <button class="like-btn" onclick="votePhoto('${item.id}')">${isLiked ? '❤️' : '🤍'}</button>
+                        </div>
+                    </div>
+                `;
+                feedContainer.appendChild(card);
+            });
 
-                  docsArray.forEach(item => {
-                      const isLiked = likedPhotos.includes(item.id);
-                      const card = document.createElement('div');
-                      card.className = 'gallery-card';
-                      
-                      const captionMarkup = item.caption ? `<div class="card-caption-text">"${item.caption}"</div>` : '';
-                      
-                      card.innerHTML = `
-                          <img src="${item.url}">
-                          <div class="card-info-pane">
-                              ${captionMarkup}
-                              <div class="like-bar">
-                                  <span class="like-count" id="count-${item.id}">❤️ ${item.likes || 0}</span>
-                                  <button class="like-btn" onclick="votePhoto('${item.id}')">${isLiked ? '❤️' : '🤍'}</button>
-                              </div>
-                          </div>
-                      `;
-                      feedContainer.appendChild(card);
-                  });
-
-                  // Display the load more button if we retrieved the max amount of photos we asked for
-                  if (docsArray.length >= photoLimit) {
-                      loadMoreWrapper.style.display = 'block';
-                  } else {
-                      loadMoreWrapper.style.display = 'none';
-                  }
-              }, (error) => {
-                  console.error("Error fetching photos: ", error);
-              });
+            // Show button only if there are actually more photos left to show
+            if (docsArray.length > photoLimit) {
+                loadMoreWrapper.style.display = 'block';
+            } else {
+                loadMoreWrapper.style.display = 'none';
+            }
         }
 
-        // Bumps the limit and re-fetches the list
+        // Bumps the visible count and forces the feed window to redraw
         function loadMorePhotos() {
             photoLimit += 20;
-            initFeedStream();
+            // Get a fresh look at the current database collection state
+            db.collection('photos').where('status', '==', 'approved').get().then(snapshot => {
+                renderFeed(snapshot);
+            });
         }
-
-        // Run this function immediately when the page loads
-        initFeedStream();
 
         function votePhoto(docId) {
             let likedPhotos = JSON.parse(localStorage.getItem('luna_liked_ids') || '[]');
