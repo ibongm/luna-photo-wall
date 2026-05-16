@@ -9,14 +9,19 @@
         .container { max-width: 600px; margin: 0 auto; background: #1e1e1e; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border-top: 4px solid #e50914; }
         h1 { text-align: center; color: #e50914; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center;}
         
-        /* LOGIN UI STYLES */
-        #login-container { max-width: 400px; margin: 100px auto; background: #1e1e1e; padding: 40px; border-radius: 12px; border-top: 4px solid #e50914; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .login-input { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #444; background: #121212; color: white; font-size: 16px; box-sizing: border-box;}
-        .btn-login { background: #e50914; color: white; border: none; padding: 14px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; }
-        .btn-login:hover { background: #b20710; }
+        /* SECURE GOOGLE LOGIN UI STYLES */
+        #login-container { max-width: 400px; margin: 120px auto; background: #1e1e1e; padding: 40px; border-radius: 12px; border-top: 4px solid #e50914; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .btn-google-login { 
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            background: #ffffff; color: #000000; border: none; padding: 14px; 
+            font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.25); transition: background 0.2s;
+        }
+        .btn-google-login:hover { background: #f1f1f1; }
+        .btn-google-login img { width: 22px; height: 22px; }
         .btn-logout { background: #333; color: white; border: 1px solid #555; padding: 8px 15px; font-size: 14px; border-radius: 6px; cursor: pointer; }
 
-        /* ADMIN DASHBOARD STYLES */
+        /* ADMIN CONTROL PANELS */
         .controls-card { background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px; }
         .row { display: flex; justify-content: space-between; align-items: center; }
         .label-text { font-size: 16px; font-weight: bold; }
@@ -41,6 +46,7 @@
         .btn-archive-toggle { background-color: #333333; color: white; border: 1px solid #444; padding: 12px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 15px; display: block; text-align: center; }
         .btn-archive-toggle:hover { background-color: #444; }
         
+        /* Live Poll Dashboard Components */
         .poll-card { border-top: 4px solid #007bff; }
         .poll-option-row { display: flex; gap: 10px; margin-bottom: 10px; }
         .btn-add-option { background: #333; color: white; border: 1px solid #555; padding: 8px; border-radius: 6px; cursor: pointer; width: 100%; margin-bottom: 15px; }
@@ -69,12 +75,15 @@
 <body>
 
     <div id="login-container">
-        <h2 style="color: #e50914; margin-top: 0;">Luna Access</h2>
-        <p style="color: #aaa; font-size: 14px; margin-bottom: 20px;">Restricted Admin Dashboard</p>
-        <input type="email" id="admin-email" class="login-input" placeholder="Admin Email">
-        <input type="password" id="admin-password" class="login-input" placeholder="Password">
-        <button class="btn-login" onclick="loginAdmin()">LOGIN SECURELY</button>
-        <div id="login-error" style="color: #e50914; margin-top: 15px; font-size: 14px; display: none;"></div>
+        <h2 style="color: #e50914; margin-top: 0; font-size: 26px;">Luna Control</h2>
+        <p style="color: #aaa; font-size: 14px; margin-bottom: 35px;">Identity Verification Required</p>
+        
+        <button class="btn-google-login" onclick="loginAdminWithGoogle()">
+            <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/web-24dp/logo_googleg_color_web_24dp.png" alt="Google G Logo">
+            <span>Sign in with Google</span>
+        </button>
+        
+        <div id="login-error" style="color: #e50914; margin-top: 20px; font-size: 14px; font-weight: bold; display: none; background: rgba(229,9,20,0.1); padding: 10px; border-radius: 6px;"></div>
     </div>
 
     <div class="container" id="admin-dashboard-container" style="display: none;">
@@ -182,57 +191,56 @@
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        // 🚨 YOUR SECURE ADMIN EMAIL (CHANGE THIS!) 🚨
+        // 🚨 CONFIGURATION: SET YOUR AUTHORIZED GOOGLE EMAIL HERE 🚨
         const myAdminEmail = "ivanm.ploce@gmail.com"; 
 
         let archiveLoaded = false;
         let pollArchiveLoaded = false;
         let adminInitialized = false;
 
-        // --- AUTHENTICATION LOGIC ---
+        // --- GOOGLE OAUTH SECURITY CIRCUITS ---
         auth.onAuthStateChanged((user) => {
-            if (user && user.email === myAdminEmail) {
-                // Logged in! Hide login screen, show dashboard
-                document.getElementById('login-container').style.display = 'none';
-                document.getElementById('admin-dashboard-container').style.display = 'block';
-                
-                // Only boot up the database streams once they log in successfully
-                if (!adminInitialized) {
-                    initAdminPanel();
-                    adminInitialized = true;
+            if (user) {
+                if (user.email === myAdminEmail) {
+                    // Valid Administrator match verified
+                    document.getElementById('login-container').style.display = 'none';
+                    document.getElementById('admin-dashboard-container').style.display = 'block';
+                    
+                    if (!adminInitialized) {
+                        initAdminPanel();
+                        adminInitialized = true;
+                    }
+                } else {
+                    // Authentication passed but email domain signature failed validation checklist
+                    document.getElementById('login-error').textContent = "Access Denied: Your Google account (" + user.email + ") is not registered as an administrator.";
+                    document.getElementById('login-error').style.display = 'block';
+                    auth.signOut();
                 }
             } else {
-                // Not logged in (or wrong email). Show login screen.
+                // Ground structural footprint safety state default reset
                 document.getElementById('login-container').style.display = 'block';
                 document.getElementById('admin-dashboard-container').style.display = 'none';
             }
         });
 
-        function loginAdmin() {
-            const email = document.getElementById('admin-email').value.trim();
-            const password = document.getElementById('admin-password').value;
-            const errorDiv = document.getElementById('login-error');
+        function loginAdminWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            document.getElementById('login-error').style.display = 'none';
             
-            errorDiv.style.display = 'none';
-
-            if (email !== myAdminEmail) {
-                errorDiv.textContent = "Unauthorized email address.";
-                errorDiv.style.display = 'block';
-                return;
-            }
-
-            auth.signInWithEmailAndPassword(email, password)
-                .catch((error) => {
-                    errorDiv.textContent = "Error: " + error.message;
-                    errorDiv.style.display = 'block';
-                });
+            auth.signInWithPopup(provider).catch((error) => {
+                document.getElementById('login-error').textContent = "Sign-In Error: " + error.message;
+                document.getElementById('login-error').style.display = 'block';
+            });
         }
 
         function logoutAdmin() {
-            auth.signOut();
+            auth.signOut().then(() => {
+                adminInitialized = false;
+                window.location.reload(); // Force page hard-refresh to clear tracking variables clean
+            });
         }
 
-        // --- PREVIOUS ADMIN CODE (Runs only after login) ---
+        // --- APPLICATION MANAGEMENT INFRASTRUCTURE BOOTSTRAPPER ---
         function initAdminPanel() {
             db.collection('settings').doc('admin').onSnapshot((doc) => {
                 if (doc.exists) {
@@ -277,7 +285,7 @@
             db.collection('photos').where('status', '==', 'pending').onSnapshot((snapshot) => {
                   const queueContainer = document.getElementById('queue-container');
                   queueContainer.innerHTML = '';
-                  if (snapshot.empty) { queueContainer.innerHTML = '<p style="color:#aaa; grid-column: 1/-1; text-align:center;">No pending photos.</p>'; return; }
+                  if (snapshot.empty) { queueContainer.innerHTML = '<p style="color:#aaa; grid-column: 1/-1; text-align:center;">No pending photos right now.</p>'; return; }
                   let docsArray = [];
                   snapshot.forEach(doc => { docsArray.push({ id: doc.id, ...doc.data() }); });
                   docsArray.sort((a, b) => { return (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0); });
