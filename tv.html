@@ -21,25 +21,8 @@
         }
         .slide.active { opacity: 1; }
 
-        /* NEW Floating Live Vote Badge Overlays */
         .vote-badge {
-            position: absolute;
-            top: 40px;
-            right: 40px;
-            background: rgba(0, 0, 0, 0.75);
-            border: 2px solid var(--theme-accent);
-            color: #ffffff;
-            padding: 12px 24px;
-            border-radius: 50px;
-            font-size: 36px;
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            z-index: 999;
-            opacity: 0;
-            transition: opacity 1s ease-in-out, border-color 0.5s ease;
-            display: flex;
-            align-items: center;
-            gap: 12px;
+            position: absolute; top: 40px; right: 40px; background: rgba(0, 0, 0, 0.75); border: 2px solid var(--theme-accent); color: #ffffff; padding: 12px 24px; border-radius: 50px; font-size: 36px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 999; opacity: 0; transition: opacity 1s ease-in-out, border-color 0.5s ease; display: flex; align-items: center; gap: 12px;
         }
         .vote-badge.active { opacity: 1; }
         .vote-badge span { color: var(--theme-accent); transition: color 0.5s ease; }
@@ -53,6 +36,39 @@
         }
         .marquee-text { display: inline-block; padding-left: 100%; animation: scroll-marquee 25s linear infinite; }
         @keyframes scroll-marquee { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
+
+        /* =============================================
+           NEW LEADERBOARD INTERSTITIAL TAKEOVER STYLES
+           ============================================= */
+        .leaderboard-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 5, 0.96); backdrop-filter: blur(15px); z-index: 999999; display: none; flex-direction: column; justify-content: center; align-items: center; color: white; animation: fade-in-view 0.5s ease forwards;
+        }
+        @keyframes fade-in-view { from { opacity: 0; } to { opacity: 1; } }
+
+        /* The Shutter Flash Effect Components */
+        .flash-bang {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; z-index: 9999999; pointer-events: none; opacity: 0;
+        }
+        .flash-bang.trigger { animation: shutter-burst 0.7s ease-out forwards; }
+        @keyframes shutter-burst { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+        .leaderboard-title { font-size: 56px; color: var(--theme-accent); font-weight: 900; letter-spacing: 2px; margin-bottom: 40px; text-transform: uppercase; text-shadow: 0 4px 12px rgba(0,0,0,0.5); transition: color 0.5s ease; }
+        
+        /* Podium Classic Layout Matrix */
+        .podium-container { display: flex; align-items: flex-end; justify-content: center; gap: 30px; width: 90%; max-width: 1200px; height: 50%; margin-bottom: 40px; }
+        .podium-card { background: #181818; border-radius: 15px; padding: 20px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.7); position: relative; box-sizing: border-box; }
+        .podium-card img { width: 100%; height: 240px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        
+        /* Dimensional scales sorting row positions */
+        .gold { width: 34%; height: 100%; border-top: 5px solid #d4af37; order: 2; }
+        .silver { width: 30%; height: 88%; border-top: 5px solid #b4b4b4; order: 1; }
+        .bronze { width: 30%; height: 80%; border-top: 5px solid #cd7f32; order: 3; }
+
+        .medal-badge { font-size: 54px; position: absolute; top: -35px; z-index: 10; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); }
+        .podium-votes { font-size: 28px; font-weight: bold; margin-top: 15px; color: #fff; }
+        .gold .podium-votes { color: #d4af37; font-size: 32px; }
+        
+        .leaderboard-timer { font-size: 24px; color: #666; font-weight: bold; }
     </style>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -71,6 +87,30 @@
         
         <img id="display-img-2" class="slide" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="">
         <div id="vote-badge-2" class="vote-badge"><span>❤️</span><span id="vote-text-2">0</span></div>
+    </div>
+
+    <div class="leaderboard-overlay" id="leaderboard-screen">
+        <div class="flash-bang" id="flash-overlay"></div>
+        <h1 class="leaderboard-title">🏆 Top Voted Photos 🏆</h1>
+        
+        <div class="podium-container">
+            <div class="podium-card silver" id="card-rank-2">
+                <div class="medal-badge">🥈</div>
+                <img id="img-rank-2" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+                <div class="podium-votes" id="votes-rank-2">0 votes</div>
+            </div>
+            <div class="podium-card gold" id="card-rank-1">
+                <div class="medal-badge">🥇</div>
+                <img id="img-rank-1" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+                <div class="podium-votes" id="votes-rank-1">0 votes</div>
+            </div>
+            <div class="podium-card bronze" id="card-rank-3">
+                <div class="medal-badge">🥉</div>
+                <img id="img-rank-3" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+                <div class="podium-votes" id="votes-rank-3">0 votes</div>
+            </div>
+        </div>
+        <div class="leaderboard-timer" id="leaderboard-countdown">Returning to slideshow in 15s...</div>
     </div>
 
     <div class="marquee-container" id="ticker-bar">
@@ -96,9 +136,16 @@
         let photosArray = [];
         let currentIndex = 0;
         let slideshowInterval = null;
+        let leaderboardCycleTimer = null;
         let activeToggle = 1;
         let currentSpeed = 5000;
+        let isLeaderboardShowing = false;
+        let globalTickerVisible = false;
         const transparentPixel = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+
+        // CONFIG TIME FREQUENCY WINDOWS (15 Minutes Operational Loop Default)
+        const LEADERBOARD_INTERVAL = 20000; // Change to 30000 (30 seconds) to test instantly!
+        const LEADERBOARD_DURATION = 15; // Time shown on screen in seconds
 
         const themePalette = {
             'black-red': '#e50914', 'black-gold': '#d4af37', 'electric-cyber': '#00f0ff', 'pub-emerald': '#00a86b', 'sunset-lounge': '#ff5722'
@@ -117,7 +164,6 @@
                   return timeB - timeA;
               });
 
-              // Process both url and live like metrics in structural objects
               photosArray = docsArray.map(item => ({ url: item.url, likes: item.likes || 0 }));
               handleSlideshowUpdate();
           });
@@ -133,18 +179,92 @@
                     const newSpeed = data.slideshowSpeed * 1000;
                     if (newSpeed !== currentSpeed) {
                         currentSpeed = newSpeed;
-                        if (slideshowInterval) { clearInterval(slideshowInterval); slideshowInterval = setInterval(runRotation, currentSpeed); }
+                        if (slideshowInterval && !isLeaderboardShowing) { 
+                            clearInterval(slideshowInterval); 
+                            slideshowInterval = setInterval(runRotation, currentSpeed); 
+                        }
                     }
                 }
                 const tickerBar = document.getElementById('ticker-bar');
                 const tickerText = document.getElementById('ticker-text');
                 if (data.tickerText && data.tickerText.trim() !== "") {
-                    tickerText.textContent = data.tickerText; tickerBar.style.display = 'block';
-                } else { tickerBar.style.display = 'none'; }
+                    tickerText.textContent = data.tickerText;
+                    globalTickerVisible = true;
+                    if (!isLeaderboardShowing && photosArray.length > 0) tickerBar.style.display = 'block';
+                } else {
+                    tickerBar.style.display = 'none';
+                    globalTickerVisible = false;
+                }
             }
         });
 
+        // Initialize Master Takeover Schedule Window
+        leaderboardCycleTimer = setInterval(triggerLeaderboardTakeover, LEADERBOARD_INTERVAL);
+
+        function triggerLeaderboardTakeover() {
+            // Safety valve: Skip takeover if no photos exist or if one is already active
+            if (photosArray.length === 0 || isLeaderboardShowing) return;
+
+            isLeaderboardShowing = true;
+            
+            // 1. Freeze running presentation loops
+            clearInterval(slideshowInterval);
+            slideshowInterval = null;
+            document.getElementById('ticker-bar').style.display = 'none';
+
+            // 2. Rank collection metrics by score descending
+            let rankedArray = [...photosArray].sort((a, b) => b.likes - a.likes);
+
+            // 3. Bind elements up to podium ranks
+            for (let i = 1; i <= 3; i++) {
+                const card = document.getElementById('card-rank-' + i);
+                const img = document.getElementById('img-rank-' + i);
+                const voteLabel = document.getElementById('votes-rank-' + i);
+                const dataIndex = i - 1;
+
+                if (rankedArray[dataIndex]) {
+                    img.src = rankedArray[dataIndex].url;
+                    const votes = rankedArray[dataIndex].likes;
+                    voteLabel.textContent = votes + (votes === 1 ? ' vote' : ' votes');
+                    card.style.visibility = 'visible';
+                } else {
+                    card.style.visibility = 'hidden'; // Hide the position card if less than 3 photos exist
+                }
+            }
+
+            // 4. Reveal panel and engage hardware flash trigger animation
+            const screenOverlay = document.getElementById('leaderboard-screen');
+            const flashOverlay = document.getElementById('flash-overlay');
+            
+            screenOverlay.style.display = 'flex';
+            flashOverlay.classList.add('trigger');
+
+            // 5. Spin up countdown tracker sequence
+            let remainingSeconds = LEADERBOARD_DURATION;
+            const timerLabel = document.getElementById('leaderboard-countdown');
+            timerLabel.textContent = `Returning to slideshow in ${remainingSeconds}s...`;
+
+            let countdownInterval = setInterval(() => {
+                remainingSeconds--;
+                if (remainingSeconds <= 0) {
+                    clearInterval(countdownInterval);
+                    
+                    // Collapse panels, clear flash trigger classes, and resume loops
+                    screenOverlay.style.display = 'none';
+                    flashOverlay.classList.remove('trigger');
+                    isLeaderboardShowing = false;
+                    
+                    if (globalTickerVisible) document.getElementById('ticker-bar').style.display = 'block';
+                    handleSlideshowUpdate();
+                } else {
+                    timerLabel.textContent = `Returning to slideshow in ${remainingSeconds}s...`;
+                }
+            }, 1000);
+        }
+
         function handleSlideshowUpdate() {
+            if (isLeaderboardShowing) return; // Freeze adjustments if leaderboard is currently active
+
             if (photosArray.length === 0) {
                 document.getElementById('welcome-msg').style.display = 'block';
                 document.getElementById('display-img-1').src = transparentPixel;
@@ -160,7 +280,6 @@
 
             document.getElementById('welcome-msg').style.display = 'none';
 
-            // Real-time live check: If an image is currently playing on screen, update its vote count live
             if (slideshowInterval && photosArray[currentIndex]) {
                 document.getElementById('vote-text-' + activeToggle).textContent = photosArray[currentIndex].likes;
             }
@@ -181,7 +300,7 @@
         }
 
         function runRotation() {
-            if (photosArray.length <= 1) return;
+            if (photosArray.length <= 1 || isLeaderboardShowing) return;
 
             currentIndex = (currentIndex + 1) % photosArray.length;
             const nextData = photosArray[currentIndex];
