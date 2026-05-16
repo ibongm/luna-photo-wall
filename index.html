@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luna - Share Your Photo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        .container {
+            max-width: 400px;
+            width: 100%;
+            background: #1e1e1e;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            border-top: 4px solid #e50914;
+        }
+        h1 { margin-bottom: 10px; font-size: 28px; letter-spacing: 1px; }
+        p { color: #aaa; font-size: 14px; margin-bottom: 30px; }
+        
+        /* Custom Upload Button Layout */
+        .upload-btn-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+        .btn {
+            border: 2px dashed #e50914;
+            color: #ffffff;
+            background-color: transparent;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+        .btn:hover { background-color: rgba(229, 9, 20, 0.1); }
+        .upload-btn-wrapper input[type=file] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+        #status {
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 16px;
+            color: #e50914;
+        }
+        #preview {
+            max-width: 100%;
+            max-height: 200px;
+            margin-top: 20px;
+            border-radius: 8px;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+    </style>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Luna Photo Wall</h1>
+        <p>Snap a picture or pick one from your gallery to show it on the big screen!</p>
+        
+        <div class="upload-btn-wrapper">
+            <button class="btn" id="uploadBtn">📸 Choose / Take Photo</button>
+            <input type="file" id="imageInput" accept="image/*">
+        </div>
+
+        <img id="preview" src="" alt="Image preview">
+        <div id="status"></div>
+    </div>
+
+    <script>
+        // === STEP 3: PASTE YOUR ENTIRE CONFIG OBJECT BELOW ===
+        const firebaseConfig = {
+            apiKey: "AIzaSyACxw49eWeaIy-9Dieu0yaV28F7XdgG1hE",
+  authDomain: "lunaphotowall.firebaseapp.com",
+  projectId: "lunaphotowall",
+  storageBucket: "lunaphotowall.firebasestorage.app",
+  messagingSenderId: "890645449459",
+  appId: "1:890645449459:web:69ecef0decbbdf83f60586",
+  measurementId: "G-648MZV6NP4"
+};
+        // ====================================================
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        const imageInput = document.getElementById('imageInput');
+        const statusDiv = document.getElementById('status');
+        const previewImg = document.getElementById('preview');
+
+        imageInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Show a local quick preview
+            previewImg.src = URL.createObjectURL(file);
+            previewImg.style.display = 'block';
+            statusDiv.textContent = "Uploading image...";
+            statusDiv.style.color = "#aaa";
+
+            try {
+                // 1. Create a unique file name in storage
+                const fileName = Date.now() + '_' + file.name;
+                const storageRef = storage.ref('guest_uploads/' + fileName);
+
+                // 2. Upload file to Firebase Storage
+                const snapshot = await storageRef.put(file);
+                const downloadURL = await snapshot.ref.getDownloadURL();
+
+                // 3. Check if Moderation Mode is turned on
+                let status = 'approved'; // default to instant display
+                const adminSettings = await db.collection('settings').doc('admin').get();
+                if (adminSettings.exists && adminSettings.data().moderationMode === true) {
+                    status = 'pending';
+                }
+
+                // 4. Save metadata into Firestore
+                await db.collection('photos').add({
+                    url: downloadURL,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    status: status
+                });
+
+                if (status === 'pending') {
+                    statusDiv.textContent = "Sent successfully! Waiting for staff approval.";
+                    statusDiv.style.color = "#ffcc00";
+                } else {
+                    statusDiv.textContent = "Sent successfully! Look at the TV screen! 🎉";
+                    statusDiv.style.color = "#4caf50";
+                }
+
+            } catch (error) {
+                console.error(error);
+                statusDiv.textContent = "Upload failed. Please try again.";
+                statusDiv.style.color = "#e50914";
+            }
+        });
+    </script>
+</body>
+</html>
