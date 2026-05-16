@@ -21,63 +21,44 @@
         }
         .slide.active { opacity: 1; }
 
-       /* REPOSITIONED: Changed top/right to bottom/left */
         .vote-badge {
-            position: absolute; 
-            bottom: 90px; /* Sits at the exact same height as the QR code */
-            left: 40px; 
-            background: rgba(0, 0, 0, 0.75); 
-            border: 2px solid var(--theme-accent); 
-            color: #ffffff; 
-            padding: 12px 24px; 
-            border-radius: 50px; 
-            font-size: 36px; 
-            font-weight: bold; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
-            z-index: 999; 
-            opacity: 0; 
-            transition: opacity 1s ease-in-out, border-color 0.5s ease; 
-            display: flex; 
-            align-items: center; 
-            gap: 12px;
+            position: absolute; bottom: 90px; left: 40px; background: rgba(0, 0, 0, 0.75); border: 2px solid var(--theme-accent); color: #ffffff; padding: 12px 24px; border-radius: 50px; font-size: 36px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 999; opacity: 0; transition: opacity 1s ease-in-out, border-color 0.5s ease; display: flex; align-items: center; gap: 12px;
         }
         .vote-badge.active { opacity: 1; }
         .vote-badge span { color: var(--theme-accent); transition: color 0.5s ease; }
 
-        /* NEW: Floating Symmetrical QR Corner Card */
-        /* REPOSITIONED: Changed top/left to bottom/right */
         .qr-badge {
-            position: absolute; 
-            bottom: 90px; /* Sits cleanly right above the scrolling ticker */
-            right: 40px; 
-            background: rgba(0, 0, 0, 0.75); 
-            border: 2px solid var(--theme-accent); 
-            padding: 12px; 
-            border-radius: 14px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
-            z-index: 999; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center;
-            transition: border-color 0.5s ease;
+            position: absolute; bottom: 90px; right: 40px; background: rgba(0, 0, 0, 0.75); border: 2px solid var(--theme-accent); padding: 12px; border-radius: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 999; display: flex; flex-direction: column; align-items: center; transition: border-color 0.5s ease;
         }
-        /* ENLARGED: Bumped size from 110px to 150px */
-        .qr-badge img { 
-            width: 150px; 
-            height: 150px; 
-            border-radius: 6px; 
-            background: #ffffff; 
-            padding: 6px; 
-            box-sizing: border-box;
+        .qr-badge img { width: 150px; height: 150px; border-radius: 6px; background: #ffffff; padding: 6px; box-sizing: border-box; }
+        .qr-label { color: #ffffff; font-size: 13px; font-weight: bold; margin-top: 8px; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+
+        /* NEW: Centered Floating Text Caption Elements */
+        .caption-overlay {
+            position: absolute;
+            bottom: 90px;
+            left: 50%;
+            transform: translate3d(-50%, 0, 0);
+            background: rgba(0, 0, 0, 0.8);
+            border-left: 5px solid var(--theme-accent);
+            color: #ffffff;
+            padding: 14px 28px;
+            font-size: 30px;
+            font-weight: bold;
+            font-style: italic;
+            border-radius: 6px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+            z-index: 998;
+            opacity: 0;
+            max-width: 45%;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: opacity 1s ease-in-out, border-color 0.5s ease;
+            pointer-events: none;
         }
-        .qr-label { 
-            color: #ffffff; 
-            font-size: 13px; 
-            font-weight: bold; 
-            margin-top: 8px; 
-            letter-spacing: 1px; 
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-        }
+        .caption-overlay.active { opacity: 1; }
 
         .welcome-screen { position: absolute; color: white; text-align: center; z-index: 10; }
         .welcome-screen h1 { font-size: 64px; margin-bottom: 10px; color: var(--theme-accent); text-shadow: 0 4px 10px rgba(0,0,0,0.8); transition: color 0.5s ease; }
@@ -94,9 +75,7 @@
         }
         @keyframes fade-in-view { from { opacity: 0; } to { opacity: 1; } }
 
-        .flash-bang {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; z-index: 9999999; pointer-events: none; opacity: 0;
-        }
+        .flash-bang { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; z-index: 9999999; pointer-events: none; opacity: 0; }
         .flash-bang.trigger { animation: shutter-burst 0.7s ease-out forwards; }
         @keyframes shutter-burst { 0% { opacity: 1; } 100% { opacity: 0; } }
 
@@ -135,9 +114,11 @@
         
         <img id="display-img-1" class="slide" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="">
         <div id="vote-badge-1" class="vote-badge"><span>❤️</span><span id="vote-text-1">0</span></div>
+        <div id="caption-overlay-1" class="caption-overlay"></div>
         
         <img id="display-img-2" class="slide" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="">
         <div id="vote-badge-2" class="vote-badge"><span>❤️</span><span id="vote-text-2">0</span></div>
+        <div id="caption-overlay-2" class="caption-overlay"></div>
     </div>
 
     <div class="leaderboard-overlay" id="leaderboard-screen">
@@ -216,7 +197,8 @@
                   return timeB - timeA;
               });
 
-              photosArray = docsArray.map(item => ({ url: item.url, likes: item.likes || 0 }));
+              // Binds data entries including explicit text mapping attributes
+              photosArray = docsArray.map(item => ({ url: item.url, likes: item.likes || 0, caption: item.caption || "" }));
               handleSlideshowUpdate();
           });
 
@@ -232,12 +214,9 @@
                 if (shouldBeActive !== isLeaderboardConfigActive) {
                     isLeaderboardConfigActive = shouldBeActive;
                     if (isLeaderboardConfigActive) {
-                        if (!leaderboardCycleTimer) {
-                            leaderboardCycleTimer = setInterval(triggerLeaderboardTakeover, LEADERBOARD_INTERVAL);
-                        }
+                        if (!leaderboardCycleTimer) { leaderboardCycleTimer = setInterval(triggerLeaderboardTakeover, LEADERBOARD_INTERVAL); }
                     } else {
-                        clearInterval(leaderboardCycleTimer);
-                        leaderboardCycleTimer = null;
+                        clearInterval(leaderboardCycleTimer); leaderboardCycleTimer = null;
                         if (isLeaderboardShowing) { forceDismissLeaderboard(); }
                     }
                 }
@@ -272,7 +251,7 @@
             clearInterval(slideshowInterval);
             slideshowInterval = null;
             document.getElementById('ticker-bar').style.display = 'none';
-            document.getElementById('tv-qr-card').style.display = 'none'; // Temporarily hides the tracking card out of podium views
+            document.getElementById('tv-qr-card').style.display = 'none';
 
             let rankedArray = [...photosArray].sort((a, b) => b.likes - a.likes);
 
@@ -316,7 +295,7 @@
             clearInterval(countdownInterval);
             document.getElementById('leaderboard-screen').style.display = 'none';
             document.getElementById('flash-overlay').classList.remove('trigger');
-            document.getElementById('tv-qr-card').style.display = 'flex'; // Restores the scannable corner badge immediately
+            document.getElementById('tv-qr-card').style.display = 'flex';
             isLeaderboardShowing = false;
             
             if (globalTickerVisible) document.getElementById('ticker-bar').style.display = 'block';
@@ -334,6 +313,8 @@
                 document.getElementById('display-img-2').classList.remove('active');
                 document.getElementById('vote-badge-1').classList.remove('active');
                 document.getElementById('vote-badge-2').classList.remove('active');
+                document.getElementById('caption-overlay-1').classList.remove('active');
+                document.getElementById('caption-overlay-2').classList.remove('active');
                 clearInterval(slideshowInterval);
                 slideshowInterval = null;
                 return;
@@ -343,15 +324,32 @@
 
             if (slideshowInterval && photosArray[currentIndex]) {
                 document.getElementById('vote-text-' + activeToggle).textContent = photosArray[currentIndex].likes;
+                // Dynamically refresh live caption adjustments if text fields change in-memory
+                const captionOverlay = document.getElementById('caption-overlay-' + activeToggle);
+                if (photosArray[currentIndex].caption) {
+                    captionOverlay.textContent = photosArray[currentIndex].caption;
+                    captionOverlay.classList.add('active');
+                } else {
+                    captionOverlay.classList.remove('active');
+                }
             }
 
             if (!slideshowInterval) {
                 const activeImg = document.getElementById('display-img-' + activeToggle);
                 const activeBadge = document.getElementById('vote-badge-' + activeToggle);
                 const activeText = document.getElementById('vote-text-' + activeToggle);
+                const activeCaption = document.getElementById('caption-overlay-' + activeToggle);
                 
                 activeImg.src = photosArray[0].url;
                 activeText.textContent = photosArray[0].likes;
+                
+                if (photosArray[0].caption) {
+                    activeCaption.textContent = photosArray[0].caption;
+                    activeCaption.classList.add('active');
+                } else {
+                    activeCaption.classList.remove('active');
+                }
+
                 activeImg.classList.add('active');
                 activeBadge.classList.add('active');
                 
@@ -368,20 +366,30 @@
 
             const currentImg = document.getElementById('display-img-' + activeToggle);
             const currentBadge = document.getElementById('vote-badge-' + activeToggle);
+            const currentCaption = document.getElementById('caption-overlay-' + activeToggle);
             
             activeToggle = activeToggle === 1 ? 2 : 1;
             
             const nextImg = document.getElementById('display-img-' + activeToggle);
             const nextBadge = document.getElementById('vote-badge-' + activeToggle);
             const nextText = document.getElementById('vote-text-' + activeToggle);
+            const nextCaption = document.getElementById('caption-overlay-' + activeToggle);
 
             nextImg.src = nextData.url;
             nextText.textContent = nextData.likes;
             
+            if (nextData.caption) {
+                nextCaption.textContent = nextData.caption;
+                nextCaption.classList.add('active');
+            } else {
+                nextCaption.classList.remove('active');
+            }
+
             nextImg.classList.add('active');
             nextBadge.classList.add('active');
             currentImg.classList.remove('active');
             currentBadge.classList.remove('active');
+            currentCaption.classList.remove('active');
         }
     </script>
 </body>

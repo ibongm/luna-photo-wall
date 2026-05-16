@@ -36,6 +36,7 @@
             flex-direction: column;
             gap: 15px;
             width: 100%;
+            margin-bottom: 15px;
         }
         .upload-btn-wrapper {
             position: relative;
@@ -64,21 +65,38 @@
         .upload-btn-wrapper input[type=file] {
             font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
         }
-        #status { margin-top: 25px; font-weight: bold; font-size: 16px; color: #e50914; }
+
+        /* NEW: Captions Input Styling Box */
+        .caption-field {
+            width: 100%;
+            padding: 14px;
+            border-radius: 10px;
+            border: 1px solid #444;
+            background: #121212;
+            color: white;
+            font-size: 15px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+        .caption-field:focus { border-color: #e50914; }
+
+        #status { margin-top: 15px; font-weight: bold; font-size: 16px; color: #e50914; }
         #preview { max-width: 100%; max-height: 200px; margin-top: 20px; border-radius: 8px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
 
-        /* NEW Public Gallery View Framework */
         .gallery-section { max-width: 400px; width: 100%; text-align: left; }
         .gallery-title { font-size: 20px; margin-bottom: 15px; border-bottom: 2px solid #2a2a2a; padding-bottom: 8px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
         .gallery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .gallery-card { background: #1e1e1e; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: flex; flex-direction: column; position: relative; }
         .gallery-card img { width: 100%; height: 140px; object-fit: cover; }
         
-        .like-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #252525; }
-        .like-count { font-size: 13px; font-weight: bold; color: #bbb; }
-        .like-btn { background: none; border: none; color: #ff3366; font-size: 18px; cursor: pointer; padding: 0; transition: transform 0.2s ease; }
-        .like-btn:active { transform: scale(1.4); }
-        .liked { color: #ff3366 !important; }
+        /* Interactive public card elements */
+        .card-info-pane { background: #252525; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+        .card-caption-text { font-size: 13px; color: #ddd; font-style: italic; line-height: 1.4; word-break: break-word; }
+        .like-bar { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #333; padding-top: 6px; }
+        .like-count { font-size: 12px; font-weight: bold; color: #bbb; }
+        .like-btn { background: none; border: none; color: #ff3366; font-size: 16px; cursor: pointer; padding: 0; }
     </style>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -90,6 +108,8 @@
         <h1>Luna Photo Wall</h1>
         <p>Take a live shot at the bar or choose a favorite memory from your phone!</p>
         
+        <input type="text" id="captionInput" class="caption-field" placeholder="Add a caption or sign your name... 📝" maxlength="60">
+
         <div class="button-group">
             <div class="upload-btn-wrapper">
                 <button class="btn btn-camera">📸 Snap Live Photo</button>
@@ -130,11 +150,12 @@
         const galleryInput = document.getElementById('galleryInput');
         const statusDiv = document.getElementById('status');
         const previewImg = document.getElementById('preview');
+        const captionInput = document.getElementById('captionInput');
 
         cameraInput.addEventListener('change', (e) => processFile(e.target.files[0]));
         galleryInput.addEventListener('change', (e) => processFile(e.target.files[0]));
 
-        // Sync and stream approved updates to the public voting interface
+        // Streams approved entries with textual overlay checks
         db.collection('photos')
           .where('status', '==', 'approved')
           .onSnapshot((snapshot) => {
@@ -149,51 +170,53 @@
               let docsArray = [];
               snapshot.forEach(doc => { docsArray.push({ id: doc.id, ...doc.data() }); });
 
-              // Sort feed by newest arrivals first
               docsArray.sort((a, b) => {
                   const timeA = a.timestamp ? a.timestamp.seconds : 0;
                   const timeB = b.timestamp ? b.timestamp.seconds : 0;
                   return timeB - timeA;
               });
 
-              // Pull local device memory index to track already liked photos
               const likedPhotos = JSON.parse(localStorage.getItem('luna_liked_ids') || '[]');
 
               docsArray.forEach(item => {
                   const isLiked = likedPhotos.includes(item.id);
                   const card = document.createElement('div');
                   card.className = 'gallery-card';
+                  
+                  // Injects explicit text caption logic into cards if provided
+                  const captionMarkup = item.caption ? `<div class="card-caption-text">"${item.caption}"</div>` : '';
+                  
                   card.innerHTML = `
                       <img src="${item.url}">
-                      <div class="like-bar">
-                          <span class="like-count" id="count-${item.id}">❤️ ${item.likes || 0} ${item.likes === 1 ? 'vote' : 'votes'}</span>
-                          <button class="like-btn" onclick="votePhoto('${item.id}')">${isLiked ? '❤️' : '🤍'}</button>
+                      <div class="card-info-pane">
+                          ${captionMarkup}
+                          <div class="like-bar">
+                              <span class="like-count" id="count-${item.id}">❤️ ${item.likes || 0}</span>
+                              <button class="like-btn" onclick="votePhoto('${item.id}')">${isLiked ? '❤️' : '🤍'}</button>
+                          </div>
                       </div>
                   `;
                   feedContainer.appendChild(card);
               });
           });
 
-        // Anti-spam hardware voting engine
         function votePhoto(docId) {
             let likedPhotos = JSON.parse(localStorage.getItem('luna_liked_ids') || '[]');
-            
-            if (likedPhotos.includes(docId)) {
-                alert("You've already voted for this photo! 😉");
-                return;
-            }
+            if (likedPhotos.includes(docId)) { return; }
 
-            // Atomic increment passes straight to cloud firestore
             db.collection('photos').doc(docId).update({
                 likes: firebase.firestore.FieldValue.increment(1)
             }).then(() => {
                 likedPhotos.push(docId);
                 localStorage.setItem('luna_liked_ids', JSON.stringify(likedPhotos));
-            }).catch(err => console.error("Voting failed: ", err));
+            }).catch(err => console.error(err));
         }
 
         async function processFile(file) {
             if (!file) return;
+            
+            const textText = captionInput.value.trim();
+
             previewImg.src = URL.createObjectURL(file);
             previewImg.style.display = 'block';
             statusDiv.textContent = "Processing and optimizing image...";
@@ -205,16 +228,14 @@
                     img.src = URL.createObjectURL(file);
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
+                        let width = img.width; let height = img.height;
                         const MAX_DIM = 800;
                         if (width > height) {
                             if (width > MAX_DIM) { height = Math.round((height * MAX_DIM) / width); width = MAX_DIM; }
                         } else {
                             if (height > MAX_DIM) { width = Math.round((width * MAX_DIM) / height); height = MAX_DIM; }
                         }
-                        canvas.width = width;
-                        canvas.height = height;
+                        canvas.width = width; canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
                         resolve(canvas.toDataURL('image/jpeg', 0.5));
@@ -225,12 +246,16 @@
                 const adminSettings = await db.collection('settings').doc('admin').get();
                 if (adminSettings.exists && adminSettings.data().moderationMode === true) { status = 'pending'; }
 
+                // Appends tracking payload structures directly to the document object mapping
                 await db.collection('photos').add({
                     url: base64String, 
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                     status: status,
-                    likes: 0 // Initialize structure tracking parameters securely
+                    likes: 0,
+                    caption: textText
                 });
+
+                captionInput.value = ''; // Instantly clear input field for future submissions
 
                 if (status === 'pending') {
                     statusDiv.textContent = "Sent successfully! Waiting for staff approval.";
