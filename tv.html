@@ -22,24 +22,17 @@
             align-items: center;
             position: relative;
         }
+        
+        /* FIXED: Applied directly to the image element to enforce clean aspect ratios */
         .slide {
             position: absolute;
             width: 100%;
             height: 100%;
             opacity: 0;
             transition: opacity 1s ease-in-out;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            object-fit: contain; 
         }
         .slide.active { opacity: 1; }
-        
-        /* Forces standard uncropped display with sidebars */
-        .slide img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
 
         .welcome-screen {
             position: absolute;
@@ -100,13 +93,12 @@
     <script>
         // === PASTE YOUR SAME FIREBASE CONFIG OBJECT HERE ===
         const firebaseConfig = {
-            apiKey: "AIzaSyACxw49eWeaIy-9Dieu0yaV28F7XdgG1hE",
-  authDomain: "lunaphotowall.firebaseapp.com",
-  projectId: "lunaphotowall",
-  storageBucket: "lunaphotowall.firebasestorage.app",
-  messagingSenderId: "890645449459",
-  appId: "1:890645449459:web:040fceaec5c2a9f6f60586",
-  measurementId: "G-53RH94EDMY"
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
         };
         // ===================================================
 
