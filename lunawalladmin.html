@@ -7,8 +7,16 @@
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #121212; color: #ffffff; margin: 0; padding: 20px; }
         .container { max-width: 600px; margin: 0 auto; background: #1e1e1e; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border-top: 4px solid #e50914; }
-        h1 { text-align: center; color: #e50914; margin-bottom: 25px; }
+        h1 { text-align: center; color: #e50914; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center;}
         
+        /* LOGIN UI STYLES */
+        #login-container { max-width: 400px; margin: 100px auto; background: #1e1e1e; padding: 40px; border-radius: 12px; border-top: 4px solid #e50914; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .login-input { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #444; background: #121212; color: white; font-size: 16px; box-sizing: border-box;}
+        .btn-login { background: #e50914; color: white; border: none; padding: 14px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; }
+        .btn-login:hover { background: #b20710; }
+        .btn-logout { background: #333; color: white; border: 1px solid #555; padding: 8px 15px; font-size: 14px; border-radius: 6px; cursor: pointer; }
+
+        /* ADMIN DASHBOARD STYLES */
         .controls-card { background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px; }
         .row { display: flex; justify-content: space-between; align-items: center; }
         .label-text { font-size: 16px; font-weight: bold; }
@@ -33,18 +41,14 @@
         .btn-archive-toggle { background-color: #333333; color: white; border: 1px solid #444; padding: 12px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 15px; display: block; text-align: center; }
         .btn-archive-toggle:hover { background-color: #444; }
         
-        /* Poll Editor Styles */
         .poll-card { border-top: 4px solid #007bff; }
         .poll-option-row { display: flex; gap: 10px; margin-bottom: 10px; }
         .btn-add-option { background: #333; color: white; border: 1px solid #555; padding: 8px; border-radius: 6px; cursor: pointer; width: 100%; margin-bottom: 15px; }
         .btn-add-option:hover { background: #444; }
-        
-        /* Poll Live Results inside Admin */
         .admin-poll-results { background: #1a1a1a; padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px dashed #444; }
         .poll-result-bar-bg { width: 100%; background: #333; border-radius: 4px; height: 12px; margin-bottom: 10px; overflow: hidden; }
         .poll-result-bar-fill { height: 100%; background: #007bff; width: 0%; transition: width 0.3s; }
         .poll-stats-text { display: flex; justify-content: space-between; font-size: 12px; color: #ccc; margin-bottom: 2px; }
-        
         .btn-archive-poll { background: #007bff; color: white; width: 100%; margin-top: 15px; }
 
         .queue-title { border-bottom: 2px solid #333; padding-bottom: 8px; margin-top: 25px; }
@@ -53,19 +57,31 @@
         .photo-card img { max-width: 100%; height: 150px; object-fit: cover; border-radius: 6px; }
         .card-caption-audit { font-size: 13px; color: #ffcc00; font-style: italic; margin: 8px 0; font-weight: bold; text-align: center; word-break: break-all; }
         .action-btns { display: flex; gap: 10px; margin-top: auto; }
-        
-        /* Photo Archive Button Styles */
         .btn-download { background: #007bff; color: white; flex: 1; }
         .btn-delete-permanent { background: #3d0c0f; color: #ff4a5a; border: 1px solid #e50914; flex: 1; }
         .btn-delete-permanent:hover { background: #e50914; color: white; }
     </style>
+    
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
-    <div class="container">
-        <h1>Luna Dashboard</h1>
+    <div id="login-container">
+        <h2 style="color: #e50914; margin-top: 0;">Luna Access</h2>
+        <p style="color: #aaa; font-size: 14px; margin-bottom: 20px;">Restricted Admin Dashboard</p>
+        <input type="email" id="admin-email" class="login-input" placeholder="Admin Email">
+        <input type="password" id="admin-password" class="login-input" placeholder="Password">
+        <button class="btn-login" onclick="loginAdmin()">LOGIN SECURELY</button>
+        <div id="login-error" style="color: #e50914; margin-top: 15px; font-size: 14px; display: none;"></div>
+    </div>
+
+    <div class="container" id="admin-dashboard-container" style="display: none;">
+        <h1>
+            <span>Luna Dashboard</span>
+            <button class="btn-logout" onclick="logoutAdmin()">Logout</button>
+        </h1>
 
         <div class="controls-card">
             <div class="row">
@@ -121,9 +137,7 @@
                 <span class="label-text" style="color: #007bff;">Live Poll Manager</span>
                 <label class="switch"><input type="checkbox" id="poll-toggle" onchange="togglePollLive(this.checked)"><span class="slider"></span></label>
             </div>
-            
             <input type="text" id="poll-question-input" placeholder="Enter poll question (e.g., Best retro outfit?)" style="width: 100%; box-sizing: border-box; margin-bottom: 10px; border-color: #007bff;">
-            
             <div id="poll-options-container">
                 <div class="poll-option-row"><input type="text" class="poll-opt-input" placeholder="Option 1" value="Yes"></div>
                 <div class="poll-option-row"><input type="text" class="poll-opt-input" placeholder="Option 2" value="No"></div>
@@ -166,21 +180,67 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // 🚨 YOUR SECURE ADMIN EMAIL (CHANGE THIS!) 🚨
+        const myAdminEmail = "ivanm.ploce@gmail.com"; 
 
         let archiveLoaded = false;
         let pollArchiveLoaded = false;
+        let adminInitialized = false;
 
-        initAdminPanel();
+        // --- AUTHENTICATION LOGIC ---
+        auth.onAuthStateChanged((user) => {
+            if (user && user.email === myAdminEmail) {
+                // Logged in! Hide login screen, show dashboard
+                document.getElementById('login-container').style.display = 'none';
+                document.getElementById('admin-dashboard-container').style.display = 'block';
+                
+                // Only boot up the database streams once they log in successfully
+                if (!adminInitialized) {
+                    initAdminPanel();
+                    adminInitialized = true;
+                }
+            } else {
+                // Not logged in (or wrong email). Show login screen.
+                document.getElementById('login-container').style.display = 'block';
+                document.getElementById('admin-dashboard-container').style.display = 'none';
+            }
+        });
 
+        function loginAdmin() {
+            const email = document.getElementById('admin-email').value.trim();
+            const password = document.getElementById('admin-password').value;
+            const errorDiv = document.getElementById('login-error');
+            
+            errorDiv.style.display = 'none';
+
+            if (email !== myAdminEmail) {
+                errorDiv.textContent = "Unauthorized email address.";
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            auth.signInWithEmailAndPassword(email, password)
+                .catch((error) => {
+                    errorDiv.textContent = "Error: " + error.message;
+                    errorDiv.style.display = 'block';
+                });
+        }
+
+        function logoutAdmin() {
+            auth.signOut();
+        }
+
+        // --- PREVIOUS ADMIN CODE (Runs only after login) ---
         function initAdminPanel() {
-            // General Settings Listener
             db.collection('settings').doc('admin').onSnapshot((doc) => {
                 if (doc.exists) {
                     const data = doc.data();
                     document.getElementById('mod-toggle').checked = data.moderationMode || false;
                     document.getElementById('leaderboard-toggle').checked = data.leaderboardActive || false;
                     document.getElementById('layout-select').value = data.tvLayout || "classic";
-                    document.getElementById('speed-select').value = data.slideshowSpeed || "5"; // RESTORED
+                    document.getElementById('speed-select').value = data.slideshowSpeed || "5"; 
                     document.getElementById('theme-select').value = data.colorTheme || "black-red";
                     if (data.tickerText && document.activeElement !== document.getElementById('ticker-input')) {
                         document.getElementById('ticker-input').value = data.tickerText;
@@ -188,7 +248,6 @@
                 }
             });
 
-            // Live Poll Listener
             db.collection('settings').doc('livePoll').onSnapshot((doc) => {
                 const resultsBox = document.getElementById('admin-poll-results');
                 const barsContainer = document.getElementById('poll-live-bars');
@@ -199,10 +258,8 @@
                     toggle.checked = true;
                     resultsBox.style.display = 'block';
                     barsContainer.innerHTML = '';
-                    
                     let totalVotes = 0;
                     data.options.forEach((opt, i) => totalVotes += (data.votes[`opt${i}`] || 0));
-
                     data.options.forEach((opt, i) => {
                         const count = data.votes[`opt${i}`] || 0;
                         const pct = totalVotes === 0 ? 0 : Math.round((count / totalVotes) * 100);
@@ -217,21 +274,17 @@
                 }
             });
 
-            // Pending photo queue viewer
             db.collection('photos').where('status', '==', 'pending').onSnapshot((snapshot) => {
                   const queueContainer = document.getElementById('queue-container');
                   queueContainer.innerHTML = '';
                   if (snapshot.empty) { queueContainer.innerHTML = '<p style="color:#aaa; grid-column: 1/-1; text-align:center;">No pending photos.</p>'; return; }
-
                   let docsArray = [];
                   snapshot.forEach(doc => { docsArray.push({ id: doc.id, ...doc.data() }); });
                   docsArray.sort((a, b) => { return (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0); });
-
                   docsArray.forEach(item => {
                       const card = document.createElement('div'); card.className = 'photo-card';
                       const textAudit = item.caption ? `<div class="card-caption-audit">📝 "${item.caption}"</div>` : '';
                       let timeString = item.timestamp ? item.timestamp.toDate().toLocaleString() : "Unknown Time";
-
                       card.innerHTML = `
                           <img src="${item.url}">${textAudit}
                           <div style="font-size: 11px; color: #aaa; margin-top: 5px; text-align:center;">🕒 ${timeString}</div>
@@ -245,7 +298,6 @@
               });
         }
 
-        // --- POLL FUNCTIONS ---
         function addPollOption() {
             const container = document.getElementById('poll-options-container');
             const row = document.createElement('div'); row.className = 'poll-option-row';
@@ -260,20 +312,12 @@
                 let options = [];
                 inputs.forEach(inp => { if(inp.value.trim() !== "") options.push(inp.value.trim()); });
                 if(options.length < 2) options = ["Option 1", "Option 2"];
-
                 let initVotes = {};
                 options.forEach((o, i) => initVotes[`opt${i}`] = 0);
-
                 db.collection('settings').doc('livePoll').set({
-                    isActive: true,
-                    pollId: Date.now().toString(),
-                    question: q,
-                    options: options,
-                    votes: initVotes
+                    isActive: true, pollId: Date.now().toString(), question: q, options: options, votes: initVotes
                 });
-            } else {
-                db.collection('settings').doc('livePoll').update({ isActive: false });
-            }
+            } else { db.collection('settings').doc('livePoll').update({ isActive: false }); }
         }
 
         async function archivePoll() {
@@ -283,10 +327,7 @@
                 if (pollDoc.exists) {
                     const data = pollDoc.data();
                     await db.collection('polls').add({
-                        question: data.question,
-                        options: data.options,
-                        votes: data.votes,
-                        archivedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        question: data.question, options: data.options, votes: data.votes, archivedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
                     await db.collection('settings').doc('livePoll').update({ isActive: false });
                     alert("Poll archived successfully!");
@@ -294,7 +335,6 @@
             } catch (err) { console.error(err); }
         }
 
-        // --- ARCHIVE VIEWER FUNCTIONS ---
         function toggleArchiveView() {
             const section = document.getElementById('archive-section');
             const btn = document.getElementById('archive-btn');
@@ -317,15 +357,12 @@
             db.collection('photos').where('status', 'in', ['approved', 'archived']).onSnapshot((snapshot) => {
                   const container = document.getElementById('archive-container'); container.innerHTML = '';
                   if (snapshot.empty) { container.innerHTML = '<p style="color:#aaa; grid-column: 1/-1; text-align:center;">The photo archive is empty.</p>'; return; }
-                  
                   let docsArray = []; snapshot.forEach(doc => docsArray.push({ id: doc.id, ...doc.data() }));
                   docsArray.sort((a, b) => { return (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0); });
-                  
                   docsArray.forEach(item => {
                       const card = document.createElement('div'); card.className = 'photo-card';
                       const textAudit = item.caption ? `<div class="card-caption-audit">📝 "${item.caption}"</div>` : '';
                       let timeString = item.timestamp ? item.timestamp.toDate().toLocaleString() : "Unknown Time";
-
                       card.innerHTML = `
                           <img src="${item.url}">
                           ${textAudit}
@@ -346,17 +383,14 @@
                 const container = document.getElementById('poll-archive-container');
                 container.innerHTML = '';
                 if (snapshot.empty) { container.innerHTML = '<p style="color:#aaa; text-align:center;">No archived polls yet.</p>'; return; }
-
                 snapshot.forEach(doc => {
                     const data = doc.data();
                     let totalVotes = 0;
                     data.options.forEach((opt, i) => totalVotes += (data.votes[`opt${i}`] || 0));
                     let timeStr = data.archivedAt ? data.archivedAt.toDate().toLocaleString() : "Unknown";
-                    
                     let html = `<div style="background: #2a2a2a; padding: 15px; border-radius: 8px; border-left: 4px solid #007bff;">
                                   <h4 style="margin:0 0 10px 0; color:#fff;">${data.question}</h4>
                                   <div style="font-size:11px; color:#aaa; margin-bottom:10px;">🕒 Ended: ${timeStr} | Total Votes: ${totalVotes}</div>`;
-                    
                     data.options.forEach((opt, i) => {
                         const count = data.votes[`opt${i}`] || 0;
                         html += `<div style="display:flex; justify-content:space-between; font-size:13px; color:#ccc; border-bottom:1px solid #444; padding:4px 0;">
@@ -370,12 +404,8 @@
         }
 
         function downloadBase64(base64Data, filename) {
-            const link = document.createElement('a');
-            link.href = base64Data;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            const link = document.createElement('a'); link.href = base64Data; link.download = filename;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
 
         function deletePhotoPermanently(docId) {
@@ -383,12 +413,11 @@
             db.collection('photos').doc(docId).delete().catch(err => console.error(err));
         }
 
-        // --- GENERAL ADMIN FUNCTIONS ---
         function updateStatus(docId, newStatus) { db.collection('photos').doc(docId).update({ status: newStatus }); }
         function toggleModeration(isTrue) { db.collection('settings').doc('admin').set({ moderationMode: isTrue }, { merge: true }); }
         function toggleLeaderboard(isTrue) { db.collection('settings').doc('admin').set({ leaderboardActive: isTrue }, { merge: true }); }
         function updateLayout(layoutName) { db.collection('settings').doc('admin').set({ tvLayout: layoutName }, { merge: true }); }
-        function updateSpeed(seconds) { db.collection('settings').doc('admin').set({ slideshowSpeed: parseInt(seconds) }, { merge: true }); } // RESTORED
+        function updateSpeed(seconds) { db.collection('settings').doc('admin').set({ slideshowSpeed: parseInt(seconds) }, { merge: true }); } 
         function updateTheme(themeName) { db.collection('settings').doc('admin').set({ colorTheme: themeName }, { merge: true }); }
         function updateTicker() {
             const text = document.getElementById('ticker-input').value;
@@ -402,7 +431,7 @@
                 const batch = db.batch();
                 snapshot.forEach(doc => { batch.update(doc.ref, { status: 'archived' }); });
                 await batch.commit();
-                alert("TV screen cleared successfully! 💥"); // RESTORED
+                alert("TV screen cleared successfully! 💥"); 
             } catch (error) { console.error(error); }
         }
     </script>
