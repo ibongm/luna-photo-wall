@@ -5,114 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Luna - Control Dashboard</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background-color: #121212;
-            color: #ffffff;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: #1e1e1e;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            border-top: 4px solid #e50914;
-        }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #121212; color: #ffffff; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: #1e1e1e; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border-top: 4px solid #e50914; }
         h1 { text-align: center; color: #e50914; margin-bottom: 25px; }
         
-        .controls-card {
-            background: #2a2a2a;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+        .controls-card { background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .row { display: flex; justify-content: space-between; align-items: center; }
         .label-text { font-size: 16px; font-weight: bold; }
         
-        .ticker-input-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 5px;
-        }
-        input[type="text"] {
-            flex: 1;
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #444;
-            background: #121212;
-            color: white;
-            font-size: 14px;
-        }
+        .ticker-input-group { display: flex; gap: 10px; margin-top: 5px; }
+        input[type="text"] { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #444; background: #121212; color: white; font-size: 14px; }
         
-        select {
-            padding: 8px 12px;
-            border-radius: 6px;
-            background: #121212;
-            color: white;
-            border: 1px solid #444;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-        }
+        select { padding: 8px 12px; border-radius: 6px; background: #121212; color: white; border: 1px solid #444; font-size: 14px; font-weight: bold; cursor: pointer; }
 
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 26px;
-        }
+        .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider {
-            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #ccc; transition: .4s; border-radius: 34px;
-        }
-        .slider:before {
-            position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px;
-            background-color: white; transition: .4s; border-radius: 50%;
-        }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: #4caf50; }
         input:checked + .slider:before { transform: translateX(24px); }
 
         .btn-action { padding: 10px 15px; border: none; font-weight: bold; border-radius: 6px; cursor: pointer; }
         .btn-approve { background: #4caf50; color: white; }
         .btn-reject { background: #e50914; color: white; }
-        
-        .btn-nuke {
-            background-color: #e50914; color: white; border: none; padding: 12px;
-            font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%;
-        }
+        .btn-nuke { background-color: #e50914; color: white; border: none; padding: 12px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; }
         .btn-nuke:hover { background-color: #b20710; }
-
-        .btn-archive-toggle {
-            background-color: #333333; color: white; border: 1px solid #444; padding: 12px;
-            font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%;
-            margin-top: 15px; display: block; text-align: center;
-        }
-        .btn-archive-toggle:hover { background-color: #444; }
+        .btn-archive-toggle { background-color: #333333; color: white; border: 1px solid #444; padding: 12px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 15px; display: block; text-align: center; }
         
-        .btn-download { background: #007bff; color: white; flex: 1; }
-        .btn-delete-permanent { background: #3d0c0f; color: #ff4a5a; border: 1px solid #e50914; flex: 1; }
-        .btn-delete-permanent:hover { background: #e50914; color: white; }
+        /* Poll Editor Styles */
+        .poll-card { border-top: 4px solid #007bff; }
+        .poll-option-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .btn-add-option { background: #333; color: white; border: 1px solid #555; padding: 8px; border-radius: 6px; cursor: pointer; width: 100%; margin-bottom: 15px; }
+        .btn-add-option:hover { background: #444; }
+        
+        /* Poll Live Results inside Admin */
+        .admin-poll-results { background: #1a1a1a; padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px dashed #444; }
+        .poll-result-bar-bg { width: 100%; background: #333; border-radius: 4px; height: 12px; margin-bottom: 10px; overflow: hidden; }
+        .poll-result-bar-fill { height: 100%; background: #007bff; width: 0%; transition: width 0.3s; }
+        .poll-stats-text { display: flex; justify-content: space-between; font-size: 12px; color: #ccc; margin-bottom: 2px; }
+        
+        .btn-archive-poll { background: #007bff; color: white; width: 100%; margin-top: 15px; }
 
         .queue-title { border-bottom: 2px solid #333; padding-bottom: 8px; margin-top: 25px; }
         .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
         .photo-card { background: #2a2a2a; padding: 10px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between; }
         .photo-card img { max-width: 100%; height: 150px; object-fit: cover; border-radius: 6px; }
-        
         .card-caption-audit { font-size: 13px; color: #ffcc00; font-style: italic; margin: 8px 0; font-weight: bold; text-align: center; word-break: break-all; }
         .action-btns { display: flex; gap: 10px; margin-top: auto; }
+        .btn-download { background: #007bff; color: white; flex: 1; }
+        .btn-delete-permanent { background: #3d0c0f; color: #ff4a5a; border: 1px solid #e50914; flex: 1; }
     </style>
-
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
@@ -124,74 +66,75 @@
         <div class="controls-card">
             <div class="row">
                 <span class="label-text">Guest Photo Moderation</span>
-                <label class="switch">
-                    <input type="checkbox" id="mod-toggle" onchange="toggleModeration(this.checked)">
-                    <span class="slider"></span>
-                </label>
+                <label class="switch"><input type="checkbox" id="mod-toggle" onchange="toggleModeration(this.checked)"><span class="slider"></span></label>
             </div>
-
             <div class="row">
                 <span class="label-text">Weekend Podium Takeover</span>
-                <label class="switch">
-                    <input type="checkbox" id="leaderboard-toggle" onchange="toggleLeaderboard(this.checked)">
-                    <span class="slider"></span>
-                </label>
+                <label class="switch"><input type="checkbox" id="leaderboard-toggle" onchange="toggleLeaderboard(this.checked)"><span class="slider"></span></label>
             </div>
-
             <div class="row">
                 <span class="label-text">TV Layout Structure</span>
                 <select id="layout-select" onchange="updateLayout(this.value)">
-                    <option value="classic">📺 Classic Spotlight (Single)</option>
-                    <option value="polaroid">📸 Polaroid Retro Card</option>
-                    <option value="split">♊ Split-Screen Duo (Double)</option>
-                    <option value="mosaic">🧩 Mosaic Party Grid (4-Photo)</option>
-                    <option value="reel">🎞️ Cinematic Film Reel</option>
-                    <option value="comic">💥 Comic Vignette Pop-Art</option>
+                    <option value="classic">📺 Classic</option>
+                    <option value="polaroid">📸 Polaroid</option>
+                    <option value="split">♊ Split</option>
+                    <option value="mosaic">🧩 Mosaic</option>
+                    <option value="reel">🎞️ Reel</option>
+                    <option value="comic">💥 Comic</option>
                 </select>
             </div>
-            
-            <div class="row">
-                <span class="label-text">Slideshow Rotation Speed</span>
-                <select id="speed-select" onchange="updateSpeed(this.value)">
-                    <option value="3">⚡ Fast (3s)</option>
-                    <option value="5">▶ Normal (5s)</option>
-                    <option value="10">🐢 Slow (10s)</option>
-                    <option value="15">⏳ Relaxed (15s)</option>
-                </select>
-            </div>
-
             <div class="row">
                 <span class="label-text">TV Color Theme Profile</span>
                 <select id="theme-select" onchange="updateTheme(this.value)">
                     <option value="black-red">🔴 Black & Red</option>
                     <option value="black-gold">🟡 Black & Gold</option>
-                    <option value="electric-cyber">🔵 Electric Cyber (Blue)</option>
-                    <option value="pub-emerald">🟢 Pub Quiz Emerald</option>
-                    <option value="sunset-lounge">🟠 Sunset Lounge (Orange)</option>
+                    <option value="electric-cyber">🔵 Electric Cyber</option>
+                    <option value="pub-emerald">🟢 Pub Emerald</option>
                 </select>
             </div>
-            
             <hr style="border: 0; border-top: 1px solid #444; margin: 5px 0;">
-            
             <div style="display: flex; flex-direction: column; gap: 5px;">
                 <span class="label-text">Bottom Promo Ticker Text</span>
                 <div class="ticker-input-group">
-                    <input type="text" id="ticker-input" placeholder="Ex: Next Pub Quiz on Tuesday at 8 PM! 🏆">
+                    <input type="text" id="ticker-input" placeholder="Ex: Next Pub Quiz Tuesday! 🏆">
                     <button class="btn-action btn-approve" onclick="updateTicker()">Save</button>
                 </div>
             </div>
+            <button class="btn-nuke" onclick="nukeScreen()" style="margin-top:10px;">💥 NUKE CURRENT TV SLIDESHOW</button>
+        </div>
 
-            <hr style="border: 0; border-top: 1px solid #444; margin: 5px 0;">
-            <button class="btn-nuke" onclick="nukeScreen()">💥 NUKE CURRENT TV SLIDESHOW</button>
+        <div class="controls-card poll-card">
+            <div class="row" style="margin-bottom: 10px;">
+                <span class="label-text" style="color: #007bff;">Live Poll Manager</span>
+                <label class="switch"><input type="checkbox" id="poll-toggle" onchange="togglePollLive(this.checked)"><span class="slider"></span></label>
+            </div>
+            
+            <input type="text" id="poll-question-input" placeholder="Enter poll question (e.g., Best retro outfit?)" style="width: 100%; box-sizing: border-box; margin-bottom: 10px; border-color: #007bff;">
+            
+            <div id="poll-options-container">
+                <div class="poll-option-row"><input type="text" class="poll-opt-input" placeholder="Option 1" value="Yes"></div>
+                <div class="poll-option-row"><input type="text" class="poll-opt-input" placeholder="Option 2" value="No"></div>
+            </div>
+            <button class="btn-add-option" onclick="addPollOption()">+ Add Another Option</button>
+
+            <div class="admin-poll-results" id="admin-poll-results" style="display: none;">
+                <h4 style="margin: 0 0 10px 0; color: #aaa;">Live Results Monitor</h4>
+                <div id="poll-live-bars"></div>
+                <button class="btn-action btn-archive-poll" onclick="archivePoll()">📥 End & Archive Poll</button>
+            </div>
         </div>
 
         <h3 class="queue-title">Pending Photos Approval Queue</h3>
         <div class="photo-grid" id="queue-container"></div>
 
-        <button class="btn-archive-toggle" id="archive-btn" onclick="toggleArchiveView()">📁 View History Archive</button>
+        <button class="btn-archive-toggle" id="archive-btn" onclick="toggleArchiveView()">📁 View Photo History Archive</button>
         <div id="archive-section" style="display: none;">
-            <h3 class="queue-title">All Uploaded Photos (Approved & Nuked)</h3>
             <div class="photo-grid" id="archive-container"></div>
+        </div>
+
+        <button class="btn-archive-toggle" id="poll-archive-btn" onclick="togglePollArchiveView()" style="border-color: #007bff; color: #8ab4f8;">📊 View Archived Polls</button>
+        <div id="poll-archive-section" style="display: none;">
+            <div id="poll-archive-container" style="margin-top: 15px; display: flex; flex-direction: column; gap: 15px;"></div>
         </div>
     </div>
 
@@ -211,18 +154,16 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        let archiveLoaded = false;
-
         initAdminPanel();
 
         function initAdminPanel() {
+            // General Settings Listener
             db.collection('settings').doc('admin').onSnapshot((doc) => {
                 if (doc.exists) {
                     const data = doc.data();
                     document.getElementById('mod-toggle').checked = data.moderationMode || false;
                     document.getElementById('leaderboard-toggle').checked = data.leaderboardActive || false;
                     document.getElementById('layout-select').value = data.tvLayout || "classic";
-                    document.getElementById('speed-select').value = data.slideshowSpeed || "5";
                     document.getElementById('theme-select').value = data.colorTheme || "black-red";
                     if (data.tickerText && document.activeElement !== document.getElementById('ticker-input')) {
                         document.getElementById('ticker-input').value = data.tickerText;
@@ -230,42 +171,52 @@
                 }
             });
 
+            // Live Poll Listener
+            db.collection('settings').doc('livePoll').onSnapshot((doc) => {
+                const resultsBox = document.getElementById('admin-poll-results');
+                const barsContainer = document.getElementById('poll-live-bars');
+                const toggle = document.getElementById('poll-toggle');
+
+                if (doc.exists && doc.data().isActive) {
+                    const data = doc.data();
+                    toggle.checked = true;
+                    resultsBox.style.display = 'block';
+                    barsContainer.innerHTML = '';
+                    
+                    let totalVotes = 0;
+                    data.options.forEach((opt, i) => totalVotes += (data.votes[`opt${i}`] || 0));
+
+                    data.options.forEach((opt, i) => {
+                        const count = data.votes[`opt${i}`] || 0;
+                        const pct = totalVotes === 0 ? 0 : Math.round((count / totalVotes) * 100);
+                        barsContainer.innerHTML += `
+                            <div class="poll-stats-text"><span>${opt}</span><span>${count} votes (${pct}%)</span></div>
+                            <div class="poll-result-bar-bg"><div class="poll-result-bar-fill" style="width: ${pct}%"></div></div>
+                        `;
+                    });
+                } else {
+                    toggle.checked = false;
+                    resultsBox.style.display = 'none';
+                }
+            });
+
             // Pending photo queue viewer
-            db.collection('photos')
-              .where('status', '==', 'pending')
-              .onSnapshot((snapshot) => {
+            db.collection('photos').where('status', '==', 'pending').onSnapshot((snapshot) => {
                   const queueContainer = document.getElementById('queue-container');
                   queueContainer.innerHTML = '';
-                  
-                  if (snapshot.empty) {
-                      queueContainer.innerHTML = '<p style="color:#aaa; grid-column: 1/-1; text-align:center;">No pending photos right now.</p>';
-                      return;
-                  }
+                  if (snapshot.empty) { queueContainer.innerHTML = '<p style="color:#aaa; grid-column: 1/-1; text-align:center;">No pending photos.</p>'; return; }
 
                   let docsArray = [];
                   snapshot.forEach(doc => { docsArray.push({ id: doc.id, ...doc.data() }); });
-
-                  docsArray.sort((a, b) => {
-                      const timeA = a.timestamp ? a.timestamp.seconds : 0;
-                      const timeB = b.timestamp ? b.timestamp.seconds : 0;
-                      return timeA - timeB;
-                  });
+                  docsArray.sort((a, b) => { return (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0); });
 
                   docsArray.forEach(item => {
-                      const card = document.createElement('div');
-                      card.className = 'photo-card';
-                      
+                      const card = document.createElement('div'); card.className = 'photo-card';
                       const textAudit = item.caption ? `<div class="card-caption-audit">📝 "${item.caption}"</div>` : '';
-
-                      // Format the timestamp for the pending queue
-                      let timeString = "Unknown Time";
-                      if (item.timestamp) {
-                          timeString = item.timestamp.toDate().toLocaleString();
-                      }
+                      let timeString = item.timestamp ? item.timestamp.toDate().toLocaleString() : "Unknown Time";
 
                       card.innerHTML = `
-                          <img src="${item.url}">
-                          ${textAudit}
+                          <img src="${item.url}">${textAudit}
                           <div style="font-size: 11px; color: #aaa; margin-top: 5px; text-align:center;">🕒 ${timeString}</div>
                           <div class="action-btns" style="margin-top: 10px;">
                               <button class="btn-action btn-approve" style="flex:1;" onclick="updateStatus('${item.id}', 'approved')">Approve</button>
@@ -277,117 +228,136 @@
               });
         }
 
-        function toggleArchiveView() {
-            const archiveSection = document.getElementById('archive-section');
-            const archiveBtn = document.getElementById('archive-btn');
+        // --- POLL FUNCTIONS ---
+        function addPollOption() {
+            const container = document.getElementById('poll-options-container');
+            const row = document.createElement('div'); row.className = 'poll-option-row';
+            row.innerHTML = `<input type="text" class="poll-opt-input" placeholder="Option ${container.children.length + 1}">`;
+            container.appendChild(row);
+        }
 
-            if (archiveSection.style.display === "none") {
-                archiveSection.style.display = "block";
-                archiveBtn.textContent = "📁 Close History Archive";
-                
-                if (!archiveLoaded) {
-                    loadPhotoArchive();
-                    archiveLoaded = true;
-                }
+        function togglePollLive(isTrue) {
+            if (isTrue) {
+                // Starting a new poll
+                const q = document.getElementById('poll-question-input').value || "Quick Question?";
+                const inputs = document.querySelectorAll('.poll-opt-input');
+                let options = [];
+                inputs.forEach(inp => { if(inp.value.trim() !== "") options.push(inp.value.trim()); });
+                if(options.length < 2) options = ["Option 1", "Option 2"]; // Fallback
+
+                // Initialize votes to 0 for each option
+                let initVotes = {};
+                options.forEach((o, i) => initVotes[`opt${i}`] = 0);
+
+                db.collection('settings').doc('livePoll').set({
+                    isActive: true,
+                    pollId: Date.now().toString(), // Unique ID so guests can vote again
+                    question: q,
+                    options: options,
+                    votes: initVotes
+                });
             } else {
-                archiveSection.style.display = "none";
-                archiveBtn.textContent = "📁 View History Archive";
+                // Hiding poll
+                db.collection('settings').doc('livePoll').update({ isActive: false });
             }
         }
 
+        async function archivePoll() {
+            if (!confirm("End this poll and move it to the archive?")) return;
+            try {
+                const pollDoc = await db.collection('settings').doc('livePoll').get();
+                if (pollDoc.exists) {
+                    const data = pollDoc.data();
+                    // Save to archive collection
+                    await db.collection('polls').add({
+                        question: data.question,
+                        options: data.options,
+                        votes: data.votes,
+                        archivedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    // Turn off live
+                    await db.collection('settings').doc('livePoll').update({ isActive: false });
+                    alert("Poll archived successfully!");
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        // --- ARCHIVE VIEWER FUNCTIONS ---
+        let archiveLoaded = false;
+        function toggleArchiveView() {
+            const section = document.getElementById('archive-section');
+            const btn = document.getElementById('archive-btn');
+            if (section.style.display === "none") {
+                section.style.display = "block"; btn.textContent = "📁 Close Photo Archive";
+                if (!archiveLoaded) { loadPhotoArchive(); archiveLoaded = true; }
+            } else { section.style.display = "none"; btn.textContent = "📁 View Photo History Archive"; }
+        }
+
+        let pollArchiveLoaded = false;
+        function togglePollArchiveView() {
+            const section = document.getElementById('poll-archive-section');
+            const btn = document.getElementById('poll-archive-btn');
+            if (section.style.display === "none") {
+                section.style.display = "block"; btn.textContent = "📊 Close Poll Archive";
+                if (!pollArchiveLoaded) { loadPollArchive(); pollArchiveLoaded = true; }
+            } else { section.style.display = "none"; btn.textContent = "📊 View Archived Polls"; }
+        }
+
+        function loadPollArchive() {
+            db.collection('polls').orderBy('archivedAt', 'desc').onSnapshot((snapshot) => {
+                const container = document.getElementById('poll-archive-container');
+                container.innerHTML = '';
+                if (snapshot.empty) { container.innerHTML = '<p style="color:#aaa; text-align:center;">No archived polls yet.</p>'; return; }
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    let totalVotes = 0;
+                    data.options.forEach((opt, i) => totalVotes += (data.votes[`opt${i}`] || 0));
+                    
+                    let timeStr = data.archivedAt ? data.archivedAt.toDate().toLocaleString() : "Unknown";
+                    
+                    let html = `<div style="background: #2a2a2a; padding: 15px; border-radius: 8px; border-left: 4px solid #007bff;">
+                                  <h4 style="margin:0 0 10px 0; color:#fff;">${data.question}</h4>
+                                  <div style="font-size:11px; color:#aaa; margin-bottom:10px;">🕒 Ended: ${timeStr} | Total Votes: ${totalVotes}</div>`;
+                    
+                    data.options.forEach((opt, i) => {
+                        const count = data.votes[`opt${i}`] || 0;
+                        html += `<div style="display:flex; justify-content:space-between; font-size:13px; color:#ccc; border-bottom:1px solid #444; padding:4px 0;">
+                                    <span>${opt}</span><span>${count} votes</span>
+                                 </div>`;
+                    });
+                    html += `</div>`;
+                    container.innerHTML += html;
+                });
+            });
+        }
+
         function loadPhotoArchive() {
-            db.collection('photos')
-              .where('status', 'in', ['approved', 'archived'])
-              .onSnapshot((snapshot) => {
-                  const archiveContainer = document.getElementById('archive-container');
-                  archiveContainer.innerHTML = '';
-
-                  if (snapshot.empty) {
-                      archiveContainer.innerHTML = '<p style="color:#aaa; grid-column: 1/-1; text-align:center;">The archive is currently empty.</p>';
-                      return;
-                  }
-
-                  let docsArray = [];
-                  snapshot.forEach(doc => { docsArray.push({ id: doc.id, ...doc.data() }); });
-
-                  docsArray.sort((a, b) => {
-                      const timeA = a.timestamp ? a.timestamp.seconds : 0;
-                      const timeB = b.timestamp ? b.timestamp.seconds : 0;
-                      return timeB - timeA;
-                  });
-
+            db.collection('photos').where('status', 'in', ['approved', 'archived']).onSnapshot((snapshot) => {
+                  const container = document.getElementById('archive-container'); container.innerHTML = '';
+                  if (snapshot.empty) return;
+                  let docsArray = []; snapshot.forEach(doc => docsArray.push({ id: doc.id, ...doc.data() }));
+                  docsArray.sort((a, b) => { return (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0); });
                   docsArray.forEach(item => {
-                      const card = document.createElement('div');
-                      card.className = 'photo-card';
-                      
-                      const textAudit = item.caption ? `<div class="card-caption-audit">📝 "${item.caption}"</div>` : '';
-
-                      // Format the timestamp for the history archive
-                      let timeString = "Unknown Time";
-                      if (item.timestamp) {
-                          timeString = item.timestamp.toDate().toLocaleString();
-                      }
-
-                      card.innerHTML = `
-                          <img src="${item.url}">
-                          ${textAudit}
-                          <div style="font-size: 11px; color: #aaa; margin-top: 5px; text-align:center;">🕒 ${timeString}</div>
-                          <div style="font-size: 11px; color: #888; margin-top: 5px; text-align:center;">Status: ${item.status.toUpperCase()} | ❤️ ${item.likes || 0}</div>
-                          <div class="action-btns" style="margin-top:8px;">
-                              <button class="btn-action btn-download" onclick="downloadBase64('${item.url}', 'luna_${item.id}.jpg')">📥 Save</button>
-                              <button class="btn-action btn-delete-permanent" onclick="deletePhotoPermanently('${item.id}')">❌ Delete</button>
-                          </div>
-                      `;
-                      archiveContainer.appendChild(card);
+                      const card = document.createElement('div'); card.className = 'photo-card';
+                      card.innerHTML = `<img src="${item.url}">
+                          <div style="font-size: 11px; color: #888; margin-top: 5px; text-align:center;">Status: ${item.status.toUpperCase()}</div>`;
+                      container.appendChild(card);
                   });
               });
         }
 
-        function downloadBase64(base64Data, filename) {
-            const link = document.createElement('a');
-            link.href = base64Data;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        function deletePhotoPermanently(docId) {
-            if (!confirm("Are you sure you want to PERMANENTLY delete this photo?")) return;
-            db.collection('photos').doc(docId).delete().catch(err => console.error(err));
-        }
-
-        function updateStatus(docId, newStatus) {
-            db.collection('photos').doc(docId).update({ status: newStatus });
-        }
-
-        function toggleModeration(isTrue) {
-            db.collection('settings').doc('admin').set({ moderationMode: isTrue }, { merge: true });
-        }
-
-        function toggleLeaderboard(isTrue) {
-            db.collection('settings').doc('admin').set({ leaderboardActive: isTrue }, { merge: true });
-        }
-
-        // Writes chosen layout profile strings securely to cloud configuration
-        function updateLayout(layoutName) {
-            db.collection('settings').doc('admin').set({ tvLayout: layoutName }, { merge: true });
-        }
-
-        function updateSpeed(seconds) {
-            db.collection('settings').doc('admin').set({ slideshowSpeed: parseInt(seconds) }, { merge: true });
-        }
-
-        function updateTheme(themeName) {
-            db.collection('settings').doc('admin').set({ colorTheme: themeName }, { merge: true });
-        }
-
+        // --- GENERAL ADMIN FUNCTIONS ---
+        function updateStatus(docId, newStatus) { db.collection('photos').doc(docId).update({ status: newStatus }); }
+        function toggleModeration(isTrue) { db.collection('settings').doc('admin').set({ moderationMode: isTrue }, { merge: true }); }
+        function toggleLeaderboard(isTrue) { db.collection('settings').doc('admin').set({ leaderboardActive: isTrue }, { merge: true }); }
+        function updateLayout(layoutName) { db.collection('settings').doc('admin').set({ tvLayout: layoutName }, { merge: true }); }
+        function updateTheme(themeName) { db.collection('settings').doc('admin').set({ colorTheme: themeName }, { merge: true }); }
         function updateTicker() {
             const text = document.getElementById('ticker-input').value;
             db.collection('settings').doc('admin').set({ tickerText: text }, { merge: true });
             alert("Ticker text updated live on the TV screen! 📢");
         }
-
         async function nukeScreen() {
             if (!confirm("Are you sure you want to clear all active photos off the TV screen?")) return;
             try {
@@ -395,8 +365,7 @@
                 const batch = db.batch();
                 snapshot.forEach(doc => { batch.update(doc.ref, { status: 'archived' }); });
                 await batch.commit();
-                alert("TV screen cleared successfully! 💥");
-            } catch (error) { console.error("Nuke failed: ", error); }
+            } catch (error) { console.error(error); }
         }
     </script>
 </body>
