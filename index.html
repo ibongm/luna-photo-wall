@@ -31,7 +31,6 @@
         h1 { margin-bottom: 10px; font-size: 28px; letter-spacing: 1px; }
         p { color: #aaa; font-size: 14px; margin-bottom: 30px; }
         
-        /* Custom Upload Button Layout */
         .upload-btn-wrapper {
             position: relative;
             overflow: hidden;
@@ -78,7 +77,6 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 </head>
 <body>
 
@@ -96,7 +94,7 @@
     </div>
 
     <script>
-        // === STEP 3: PASTE YOUR ENTIRE CONFIG OBJECT BELOW ===
+        // === PASTE YOUR CONFIG OBJECT BELOW ===
         const firebaseConfig = {
             apiKey: "AIzaSyACxw49eWeaIy-9Dieu0yaV28F7XdgG1hE",
   authDomain: "lunaphotowall.firebaseapp.com",
@@ -105,13 +103,12 @@
   messagingSenderId: "890645449459",
   appId: "1:890645449459:web:040fceaec5c2a9f6f60586",
   measurementId: "G-53RH94EDMY"
-};
-        // ====================================================
+        };
+        // =====================================
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        const storage = firebase.storage();
 
         const imageInput = document.getElementById('imageInput');
         const statusDiv = document.getElementById('status');
@@ -124,28 +121,54 @@
             // Show a local quick preview
             previewImg.src = URL.createObjectURL(file);
             previewImg.style.display = 'block';
-            statusDiv.textContent = "Uploading image...";
+            statusDiv.textContent = "Processing and optimizing image...";
             statusDiv.style.color = "#aaa";
 
             try {
-                // 1. Create a unique file name in storage
-                const fileName = Date.now() + '_' + file.name;
-                const storageRef = storage.ref('guest_uploads/' + fileName);
+                // Convert and compress the live image directly to a lightweight Base64 text string
+                const base64String = await new Promise((resolve) => {
+                    const img = new Image();
+                    img.src = URL.createObjectURL(file);
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
 
-                // 2. Upload file to Firebase Storage
-                const snapshot = await storageRef.put(file);
-                const downloadURL = await snapshot.ref.getDownloadURL();
+                        // Max 800px ensures it looks crisp on TV but remains a tiny, lightning-fast text string
+                        const MAX_DIM = 800;
+                        if (width > height) {
+                            if (width > MAX_DIM) {
+                                height = Math.round((height * MAX_DIM) / width);
+                                width = MAX_DIM;
+                            }
+                        } else {
+                            if (height > MAX_DIM) {
+                                width = Math.round((width * MAX_DIM) / height);
+                                height = MAX_DIM;
+                            }
+                        }
 
-                // 3. Check if Moderation Mode is turned on
-                let status = 'approved'; // default to instant display
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // Transform directly into optimized image text data
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+                        resolve(dataUrl);
+                    };
+                });
+
+                // Check if Moderation Mode is turned on
+                let status = 'approved'; 
                 const adminSettings = await db.collection('settings').doc('admin').get();
                 if (adminSettings.exists && adminSettings.data().moderationMode === true) {
                     status = 'pending';
                 }
 
-                // 4. Save metadata into Firestore
+                // Save the image text data directly into your free Firestore database
                 await db.collection('photos').add({
-                    url: downloadURL,
+                    url: base64String, 
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                     status: status
                 });
