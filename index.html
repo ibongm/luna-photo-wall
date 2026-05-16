@@ -170,7 +170,6 @@
                 return;
             }
 
-            // Poll is active!
             pollContainer.style.display = 'block';
             document.getElementById('poll-q-text').textContent = data.question;
             currentPollId = data.pollId;
@@ -178,11 +177,9 @@
             const contentArea = document.getElementById('poll-content-area');
             contentArea.innerHTML = '';
 
-            // Check if this specific phone has voted on this specific poll
             const hasVoted = localStorage.getItem(`luna_voted_poll_${currentPollId}`);
 
             if (hasVoted) {
-                // SHOW RESULTS
                 let totalVotes = 0;
                 data.options.forEach((opt, index) => {
                     totalVotes += (data.votes[`opt${index}`] || 0);
@@ -207,7 +204,6 @@
                 contentArea.innerHTML += `<div class="poll-voted-msg">You voted! Thanks for participating.</div>`;
 
             } else {
-                // SHOW VOTING BUTTONS
                 data.options.forEach((opt, index) => {
                     const btn = document.createElement('button');
                     btn.className = 'poll-option-btn';
@@ -220,17 +216,13 @@
 
         function submitPollVote(optionIndex) {
             if (!currentPollId) return;
-            
-            // Instantly save to local storage so UI updates to results view immediately
             localStorage.setItem(`luna_voted_poll_${currentPollId}`, 'true');
 
-            // Tell Firebase to increment that specific option
             const voteKey = `votes.opt${optionIndex}`;
             db.collection('settings').doc('livePoll').update({
                 [voteKey]: firebase.firestore.FieldValue.increment(1)
             }).catch(err => console.error("Vote failed", err));
         }
-
 
         // --- Photo Wall Logic ---
         const cameraInput = document.getElementById('cameraInput');
@@ -243,8 +235,10 @@
         galleryInput.addEventListener('change', (e) => processFile(e.target.files[0]));
 
         let photoLimit = 20;
+        let globalSnapshotCache = null; // Memory optimization cache
 
         db.collection('photos').where('status', '==', 'approved').onSnapshot((snapshot) => {
+            globalSnapshotCache = snapshot; // Hold data locally
             renderFeed(snapshot);
         }, (error) => console.error(error));
 
@@ -295,7 +289,9 @@
 
         function loadMorePhotos() {
             photoLimit += 20;
-            db.collection('photos').where('status', '==', 'approved').get().then(snapshot => renderFeed(snapshot));
+            if (globalSnapshotCache) {
+                renderFeed(globalSnapshotCache); // Instant load with zero database costs
+            }
         }
 
         function votePhoto(docId) {
