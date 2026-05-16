@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Luna TV - Photo Slideshow</title>
     <style>
+        /* CSS root variable setup to enable live software color shifting */
+        :root {
+            --theme-accent: #e50914; /* Defaults directly to classic Luna Red */
+        }
+
         body, html {
             margin: 0;
             padding: 0;
@@ -43,7 +48,14 @@
             text-align: center;
             z-index: 10;
         }
-        .welcome-screen h1 { font-size: 64px; margin-bottom: 10px; color: #e50914; text-shadow: 0 4px 10px rgba(0,0,0,0.8); }
+        /* Tied text element accent highlights straight to the live variable engine */
+        .welcome-screen h1 { 
+            font-size: 64px; 
+            margin-bottom: 10px; 
+            color: var(--theme-accent); 
+            text-shadow: 0 4px 10px rgba(0,0,0,0.8); 
+            transition: color 0.5s ease;
+        }
         .welcome-screen p { font-size: 28px; color: #aaa; margin: 0; }
 
         /* Smooth Scrolling Marquee Ticker */
@@ -53,7 +65,7 @@
             left: 0;
             width: 100%;
             background: rgba(0, 0, 0, 0.85);
-            border-top: 3px solid #e50914;
+            border-top: 3px solid var(--theme-accent);
             color: #ffffff;
             padding: 15px 0;
             font-size: 32px;
@@ -63,6 +75,7 @@
             box-sizing: border-box;
             z-index: 99999;
             display: none;
+            transition: border-color 0.5s ease;
         }
         .marquee-text {
             display: inline-block;
@@ -113,10 +126,19 @@
         let currentIndex = 0;
         let slideshowInterval = null;
         let activeToggle = 1;
-        let currentSpeed = 5000; // Track dynamic timeline configuration (Default 5s)
+        let currentSpeed = 5000;
         const transparentPixel = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
-        // Listen for Approved Photos (Safe local memory sorting)
+        // Hex Code Mapping Matrix for dynamic accent injection
+        const themePalette = {
+            'black-red': '#e50914',
+            'black-gold': '#d4af37',
+            'electric-cyber': '#00f0ff',
+            'pub-emerald': '#00a86b',
+            'sunset-lounge': '#ff5722'
+        };
+
+        // Listen for Approved Photos
         db.collection('photos')
           .where('status', '==', 'approved')
           .onSnapshot((snapshot) => {
@@ -133,17 +155,22 @@
               handleSlideshowUpdate();
           });
 
-        // Live settings observer (Dynamic Speed Timer & Promo Text)
+        // Combined Live settings observer
         db.collection('settings').doc('admin').onSnapshot((doc) => {
             if (doc.exists) {
                 const data = doc.data();
                 
-                // 1. Process Dynamically Adjusted Timeline Window
+                // 1. Process Color Theme Profiles
+                if (data.colorTheme && themePalette[data.colorTheme]) {
+                    const targetHex = themePalette[data.colorTheme];
+                    document.documentElement.style.setProperty('--theme-accent', targetHex);
+                }
+                
+                // 2. Process Rotation Timeline Windows
                 if (data.slideshowSpeed) {
                     const newSpeed = data.slideshowSpeed * 1000;
                     if (newSpeed !== currentSpeed) {
                         currentSpeed = newSpeed;
-                        // If the engine loop is running, drop anchor and rebuild interval live
                         if (slideshowInterval) {
                             clearInterval(slideshowInterval);
                             slideshowInterval = setInterval(runRotation, currentSpeed);
@@ -151,7 +178,7 @@
                     }
                 }
 
-                // 2. Process Promo Ticker Text
+                // 3. Process Promo Ticker Text
                 const tickerBar = document.getElementById('ticker-bar');
                 const tickerText = document.getElementById('ticker-text');
                 if (data.tickerText && data.tickerText.trim() !== "") {
@@ -183,7 +210,6 @@
                 activeImg.classList.add('active');
                 
                 currentIndex = 0;
-                // Spin up rotation tracking using currently synced timeline configuration
                 slideshowInterval = setInterval(runRotation, currentSpeed);
             }
         }

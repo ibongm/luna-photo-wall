@@ -125,6 +125,17 @@
                     <option value="15">⏳ Relaxed (15s)</option>
                 </select>
             </div>
+
+            <div class="row">
+                <span class="label-text">TV Color Theme Profile</span>
+                <select id="theme-select" onchange="updateTheme(this.value)">
+                    <option value="black-red">🔴 Black & Red</option>
+                    <option value="black-gold">🟡 Black & Gold</option>
+                    <option value="electric-cyber">🔵 Electric Cyber (Blue)</option>
+                    <option value="pub-emerald">🟢 Pub Quiz Emerald</option>
+                    <option value="sunset-lounge">🟠 Sunset Lounge (Orange)</option>
+                </select>
+            </div>
             
             <hr style="border: 0; border-top: 1px solid #444; margin: 5px 0;">
             
@@ -168,13 +179,14 @@
                     const data = doc.data();
                     document.getElementById('mod-toggle').checked = data.moderationMode || false;
                     document.getElementById('speed-select').value = data.slideshowSpeed || "5";
+                    document.getElementById('theme-select').value = data.colorTheme || "black-red";
                     if (data.tickerText && document.activeElement !== document.getElementById('ticker-input')) {
                         document.getElementById('ticker-input').value = data.tickerText;
                     }
                 }
             });
 
-            // Pending photo queue viewer (Safe local sort)
+            // Pending photo queue viewer
             db.collection('photos')
               .where('status', '==', 'pending')
               .onSnapshot((snapshot) => {
@@ -218,9 +230,13 @@
             db.collection('settings').doc('admin').set({ moderationMode: isTrue }, { merge: true });
         }
 
-        // Write selection changes directly to cloud database
         function updateSpeed(seconds) {
             db.collection('settings').doc('admin').set({ slideshowSpeed: parseInt(seconds) }, { merge: true });
+        }
+
+        // Write the new layout theme selection to Firestore
+        function updateTheme(themeName) {
+            db.collection('settings').doc('admin').set({ colorTheme: themeName }, { merge: true });
         }
 
         function updateTicker() {
