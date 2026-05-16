@@ -109,7 +109,6 @@
         .photo-card { background: #2a2a2a; padding: 10px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between; }
         .photo-card img { max-width: 100%; height: 150px; object-fit: cover; border-radius: 6px; }
         
-        /* Dashboard audit markup */
         .card-caption-audit { font-size: 13px; color: #ffcc00; font-style: italic; margin: 8px 0; font-weight: bold; text-align: center; word-break: break-all; }
         .action-btns { display: flex; gap: 10px; margin-top: auto; }
     </style>
@@ -137,6 +136,18 @@
                     <input type="checkbox" id="leaderboard-toggle" onchange="toggleLeaderboard(this.checked)">
                     <span class="slider"></span>
                 </label>
+            </div>
+
+            <div class="row">
+                <span class="label-text">TV Layout Structure</span>
+                <select id="layout-select" onchange="updateLayout(this.value)">
+                    <option value="classic">📺 Classic Spotlight (Single)</option>
+                    <option value="polaroid">📸 Polaroid Retro Card</option>
+                    <option value="split">♊ Split-Screen Duo (Double)</option>
+                    <option value="mosaic">🧩 Mosaic Party Grid (4-Photo)</option>
+                    <option value="reel">🎞️ Cinematic Film Reel</option>
+                    <option value="comic">💥 Comic Vignette Pop-Art</option>
+                </select>
             </div>
             
             <div class="row">
@@ -210,6 +221,7 @@
                     const data = doc.data();
                     document.getElementById('mod-toggle').checked = data.moderationMode || false;
                     document.getElementById('leaderboard-toggle').checked = data.leaderboardActive || false;
+                    document.getElementById('layout-select').value = data.tvLayout || "classic";
                     document.getElementById('speed-select').value = data.slideshowSpeed || "5";
                     document.getElementById('theme-select').value = data.colorTheme || "black-red";
                     if (data.tickerText && document.activeElement !== document.getElementById('ticker-input')) {
@@ -327,7 +339,7 @@
         }
 
         function deletePhotoPermanently(docId) {
-            if (!confirm("Are you sure you want to PERMANENTLY delete this photo from the database? This cannot be undone!")) return;
+            if (!confirm("Are you sure you want to PERMANENTLY delete this photo?")) return;
             db.collection('photos').doc(docId).delete().catch(err => console.error(err));
         }
 
@@ -339,9 +351,13 @@
             db.collection('settings').doc('admin').set({ moderationMode: isTrue }, { merge: true });
         }
 
-        // Leaderboard Takeover Switch
         function toggleLeaderboard(isTrue) {
             db.collection('settings').doc('admin').set({ leaderboardActive: isTrue }, { merge: true });
+        }
+
+        // Writes chosen layout profile strings securely to cloud configuration
+        function updateLayout(layoutName) {
+            db.collection('settings').doc('admin').set({ tvLayout: layoutName }, { merge: true });
         }
 
         function updateSpeed(seconds) {

@@ -5,94 +5,103 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Luna TV - Photo Slideshow</title>
     <style>
-        :root {
-            --theme-accent: #e50914;
-        }
+        :root { --theme-accent: #e50914; }
 
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000000; overflow: hidden; font-family: 'Segoe UI', Arial, sans-serif;
         }
         .slideshow-container {
-            width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; position: relative;
+            width: 100%; height: 100%; position: relative; display: flex; justify-content: center; align-items: center; box-sizing: border-box;
         }
         
-        .slide {
-            position: absolute; max-width: 100%; max-height: 100%; width: auto; height: auto; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0; transition: opacity 1s ease-in-out;
-        }
-        .slide.active { opacity: 1; }
-
+        /* Persistent Interface Overlays */
         .vote-badge {
-            position: absolute; bottom: 90px; left: 40px; background: rgba(0, 0, 0, 0.75); border: 2px solid var(--theme-accent); color: #ffffff; padding: 12px 24px; border-radius: 50px; font-size: 36px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 999; opacity: 0; transition: opacity 1s ease-in-out, border-color 0.5s ease; display: flex; align-items: center; gap: 12px;
+            position: absolute; bottom: 90px; left: 40px; background: rgba(0, 0, 0, 0.85); border: 2px solid var(--theme-accent); color: #ffffff; padding: 12px 24px; border-radius: 50px; font-size: 36px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 9999; display: none; align-items: center; gap: 12px; transition: border-color 0.5s ease;
         }
-        .vote-badge.active { opacity: 1; }
-        .vote-badge span { color: var(--theme-accent); transition: color 0.5s ease; }
+        .vote-badge span { color: var(--theme-accent); }
+        .vote-badge.show-block { display: flex; }
 
         .qr-badge {
-            position: absolute; bottom: 90px; right: 40px; background: rgba(0, 0, 0, 0.75); border: 2px solid var(--theme-accent); padding: 12px; border-radius: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 999; display: flex; flex-direction: column; align-items: center; transition: border-color 0.5s ease;
+            position: absolute; bottom: 90px; right: 40px; background: rgba(0, 0, 0, 0.85); border: 2px solid var(--theme-accent); padding: 12px; border-radius: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 9999; display: flex; flex-direction: column; align-items: center; transition: border-color 0.5s ease;
         }
         .qr-badge img { width: 150px; height: 150px; border-radius: 6px; background: #ffffff; padding: 6px; box-sizing: border-box; }
-        .qr-label { color: #ffffff; font-size: 13px; font-weight: bold; margin-top: 8px; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .qr-label { color: #ffffff; font-size: 13px; font-weight: bold; margin-top: 8px; letter-spacing: 1px; }
 
-        /* NEW: Centered Floating Text Caption Elements */
-        .caption-overlay {
-            position: absolute;
-            bottom: 90px;
-            left: 50%;
-            transform: translate3d(-50%, 0, 0);
-            background: rgba(0, 0, 0, 0.8);
-            border-left: 5px solid var(--theme-accent);
-            color: #ffffff;
-            padding: 14px 28px;
-            font-size: 30px;
-            font-weight: bold;
-            font-style: italic;
-            border-radius: 6px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.6);
-            z-index: 998;
-            opacity: 0;
-            max-width: 45%;
-            text-align: center;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            transition: opacity 1s ease-in-out, border-color 0.5s ease;
-            pointer-events: none;
-        }
-        .caption-overlay.active { opacity: 1; }
-
-        .welcome-screen { position: absolute; color: white; text-align: center; z-index: 10; }
-        .welcome-screen h1 { font-size: 64px; margin-bottom: 10px; color: var(--theme-accent); text-shadow: 0 4px 10px rgba(0,0,0,0.8); transition: color 0.5s ease; }
+        .welcome-screen { position: absolute; color: white; text-align: center; z-index: 10; display: none; }
+        .welcome-screen h1 { font-size: 64px; color: var(--theme-accent); margin-bottom: 10px; text-shadow: 0 4px 10px rgba(0,0,0,0.8); }
         .welcome-screen p { font-size: 28px; color: #aaa; margin: 0; }
 
         .marquee-container {
-            position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0, 0, 0, 0.85); border-top: 3px solid var(--theme-accent); color: #ffffff; padding: 15px 0; font-size: 32px; font-weight: bold; overflow: hidden; white-space: nowrap; box-sizing: border-box; z-index: 99999; display: none; transition: border-color 0.5s ease;
+            position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0, 0, 0, 0.9); border-top: 3px solid var(--theme-accent); color: #ffffff; padding: 15px 0; font-size: 32px; font-weight: bold; overflow: hidden; white-space: nowrap; box-sizing: border-box; z-index: 99999; display: none; transition: border-color 0.5s ease;
         }
         .marquee-text { display: inline-block; padding-left: 100%; animation: scroll-marquee 25s linear infinite; }
         @keyframes scroll-marquee { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
 
-        .leaderboard-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 5, 0.96); backdrop-filter: blur(15px); z-index: 999999; display: none; flex-direction: column; justify-content: center; align-items: center; color: white; animation: fade-in-view 0.5s ease forwards;
+        /* =============================================
+           LAYOUT RENDER STYLING MATRIX
+           ============================================= */
+        
+        /* 1 & 4. Classic & Polaroid Frame Core Rules */
+        .render-frame-solo { width: 100%; height: 100%; position: relative; display: flex; justify-content: center; align-items: center; }
+        .img-solo { max-width: 100%; max-height: 100%; width: auto; height: auto; border-radius: 4px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        
+        .caption-solo {
+            position: absolute; bottom: 95px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); border-left: 5px solid var(--theme-accent); color: white; padding: 14px 28px; font-size: 30px; font-weight: bold; font-style: italic; border-radius: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-width: 45%; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
         }
-        @keyframes fade-in-view { from { opacity: 0; } to { opacity: 1; } }
 
+        /* Polaroid Layout Rules Modifications */
+        .layout-polaroid .img-solo {
+            background: #ffffff; padding: 18px 18px 90px 18px; border-radius: 4px; max-height: 75%; box-shadow: 0 12px 35px rgba(0,0,0,0.7); box-sizing: border-box;
+        }
+        .layout-polaroid .caption-solo {
+            position: absolute; bottom: 15%; background: none; border: none; color: #121212; font-family: 'Courier New', Courier, monospace; font-size: 32px; font-weight: 900; box-shadow: none; text-shadow: none; max-width: 70%; text-align: center; width: auto;
+        }
+
+        /* 2. Split-Screen Duo Rules */
+        .render-frame-split { width: 100%; height: 100%; display: flex; box-sizing: border-box; padding: 20px 20px 260px 20px; gap: 20px; }
+        .split-col { flex: 1; height: 100%; position: relative; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 20px rgba(0,0,0,0.5); background: #080808; }
+        .split-col img { width: 100%; height: 100%; object-fit: cover; }
+        .split-meta { position: absolute; bottom: 0; left: 0; width: 100%; background: linear-gradient(transparent, rgba(0,0,0,0.95)); padding: 25px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: flex-end; }
+        .split-caption { font-size: 26px; color: #fff; font-style: italic; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        .split-likes { font-size: 24px; color: var(--theme-accent); font-weight: bold; background: rgba(0,0,0,0.6); padding: 6px 14px; border-radius: 20px; border: 1px solid var(--theme-accent); }
+
+        /* 3. Mosaic 4-Grid Layout Rules */
+        .render-frame-mosaic { width: 100%; height: 100%; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; box-sizing: border-box; padding: 20px 20px 260px 20px; gap: 20px; }
+        .mosaic-cell { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 10px; background: #080808; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        .mosaic-cell img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* 5. Cinematic Film Reel Track Rules */
+        .render-frame-reel { width: 100%; height: 100%; display: flex; align-items: center; overflow: hidden; background: #050505; white-space: nowrap; padding-bottom: 120px; box-sizing: border-box; }
+        .film-strip-track { display: flex; gap: 35px; padding: 20px 0; animation: film-scroll 45s linear infinite; }
+        @keyframes film-scroll { from { transform: translate3d(0,0,0); } to { transform: translate3d(-50%,0,0); } }
+        .film-cell { position: relative; display: inline-block; height: 45vh; min-width: 450px; background: #111; border-top: 15px dashed #222; border-bottom: 15px dashed #222; padding: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); }
+        .film-cell img { height: 100%; width: 100%; object-fit: cover; border-radius: 4px; }
+
+        /* 6. Comic Vignette Custom Skews Rules */
+        .render-frame-comic { width: 100%; height: 100%; display: flex; box-sizing: border-box; padding: 30px 30px 270px 30px; gap: 25px; background: #111; }
+        .comic-panel { position: relative; flex: 1; height: 100%; border: 6px solid #000000; box-shadow: 8px 8px 0px #000000; overflow: hidden; transition: transform 0.3s ease; background: #000; }
+        .comic-panel img { width: 100%; height: 100%; object-fit: cover; }
+        .comic-panel:nth-child(odd) { transform: rotate(-1.5deg); }
+        .comic-panel:nth-child(even) { transform: rotate(1.5deg); }
+        .comic-bubble { position: absolute; top: 15px; left: 15px; background: #ffffff; border: 3px solid #000; padding: 10px 18px; border-radius: 25px; color: #000; font-weight: 900; font-size: 20px; font-style: normal; box-shadow: 3px 3px 0px #000; max-width: 75%; }
+
+        /* Leaderboard Takeover Overlays */
+        .leaderboard-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 5, 0.96); backdrop-filter: blur(15px); z-index: 999999; display: none; flex-direction: column; justify-content: center; align-items: center; color: white;
+        }
         .flash-bang { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; z-index: 9999999; pointer-events: none; opacity: 0; }
         .flash-bang.trigger { animation: shutter-burst 0.7s ease-out forwards; }
         @keyframes shutter-burst { 0% { opacity: 1; } 100% { opacity: 0; } }
-
-        .leaderboard-title { font-size: 56px; color: var(--theme-accent); font-weight: 900; letter-spacing: 2px; margin-bottom: 40px; text-transform: uppercase; text-shadow: 0 4px 12px rgba(0,0,0,0.5); transition: color 0.5s ease; }
-        
+        .leaderboard-title { font-size: 56px; color: var(--theme-accent); font-weight: 900; letter-spacing: 2px; margin-bottom: 40px; text-transform: uppercase; text-shadow: 0 4px 12px rgba(0,0,0,0.5); }
         .podium-container { display: flex; align-items: flex-end; justify-content: center; gap: 30px; width: 90%; max-width: 1200px; height: 50%; margin-bottom: 40px; }
         .podium-card { background: #181818; border-radius: 15px; padding: 20px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.7); position: relative; box-sizing: border-box; }
         .podium-card img { width: 100%; height: 240px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
-        
         .gold { width: 34%; height: 100%; border-top: 5px solid #d4af37; order: 2; }
         .silver { width: 30%; height: 88%; border-top: 5px solid #b4b4b4; order: 1; }
         .bronze { width: 30%; height: 80%; border-top: 5px solid #cd7f32; order: 3; }
-
         .medal-badge { font-size: 54px; position: absolute; top: -35px; z-index: 10; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); }
         .podium-votes { font-size: 28px; font-weight: bold; margin-top: 15px; color: #fff; }
         .gold .podium-votes { color: #d4af37; font-size: 32px; }
-        
         .leaderboard-timer { font-size: 24px; color: #666; font-weight: bold; }
     </style>
 
@@ -101,7 +110,7 @@
 </head>
 <body>
 
-    <div class="slideshow-container" id="slideshow">
+    <div class="slideshow-container" id="slideshow-wrapper">
         <div class="qr-badge" id="tv-qr-card">
             <img src="qr.png" alt="Upload QR">
             <div class="qr-label">SCAN & SHARE 📸</div>
@@ -112,19 +121,14 @@
             <p>Scan the QR code to post your photos here! 📸</p>
         </div>
         
-        <img id="display-img-1" class="slide" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="">
-        <div id="vote-badge-1" class="vote-badge"><span>❤️</span><span id="vote-text-1">0</span></div>
-        <div id="caption-overlay-1" class="caption-overlay"></div>
+        <div id="master-vote-badge" class="vote-badge"><span>❤️</span><span id="master-vote-text">0</span></div>
         
-        <img id="display-img-2" class="slide" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="">
-        <div id="vote-badge-2" class="vote-badge"><span>❤️</span><span id="vote-text-2">0</span></div>
-        <div id="caption-overlay-2" class="caption-overlay"></div>
+        <div id="render-target" style="width:100%; height:100%;"></div>
     </div>
 
     <div class="leaderboard-overlay" id="leaderboard-screen">
         <div class="flash-bang" id="flash-overlay"></div>
         <h1 class="leaderboard-title">🏆 Top Voted Photos 🏆</h1>
-        
         <div class="podium-container">
             <div class="podium-card silver" id="card-rank-2">
                 <div class="medal-badge">🥈</div>
@@ -170,12 +174,12 @@
         let slideshowInterval = null;
         let leaderboardCycleTimer = null;
         let countdownInterval = null;
-        let activeToggle = 1;
         let currentSpeed = 5000;
         let isLeaderboardShowing = false;
         let globalTickerVisible = false;
         let isLeaderboardConfigActive = false;
-        const transparentPixel = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+        
+        let targetLayoutProfile = "classic"; // Master configuration variable state tracker
 
         const LEADERBOARD_INTERVAL = 15 * 60 * 1000; 
         const LEADERBOARD_DURATION = 15; 
@@ -184,25 +188,23 @@
             'black-red': '#e50914', 'black-gold': '#d4af37', 'electric-cyber': '#00f0ff', 'pub-emerald': '#00a86b', 'sunset-lounge': '#ff5722'
         };
 
-        // Listen for Approved Photos
+        // Stream approved queue changes
         db.collection('photos')
           .where('status', '==', 'approved')
           .onSnapshot((snapshot) => {
               let docsArray = [];
               snapshot.forEach(doc => { docsArray.push(doc.data()); });
-
               docsArray.sort((a, b) => {
                   const timeA = a.timestamp ? a.timestamp.seconds : 0;
                   const timeB = b.timestamp ? b.timestamp.seconds : 0;
                   return timeB - timeA;
               });
 
-              // Binds data entries including explicit text mapping attributes
               photosArray = docsArray.map(item => ({ url: item.url, likes: item.likes || 0, caption: item.caption || "" }));
               handleSlideshowUpdate();
           });
 
-        // Live settings observer
+        // Combined settings configuration sync
         db.collection('settings').doc('admin').onSnapshot((doc) => {
             if (doc.exists) {
                 const data = doc.data();
@@ -210,6 +212,12 @@
                     document.documentElement.style.setProperty('--theme-accent', themePalette[data.colorTheme]);
                 }
                 
+                // Track layout preference modifications live
+                if (data.tvLayout && data.tvLayout !== targetLayoutProfile) {
+                    targetLayoutProfile = data.tvLayout;
+                    handleSlideshowUpdate();
+                }
+
                 const shouldBeActive = data.leaderboardActive || false;
                 if (shouldBeActive !== isLeaderboardConfigActive) {
                     isLeaderboardConfigActive = shouldBeActive;
@@ -227,7 +235,7 @@
                         currentSpeed = newSpeed;
                         if (slideshowInterval && !isLeaderboardShowing) { 
                             clearInterval(slideshowInterval); 
-                            slideshowInterval = setInterval(runRotation, currentSpeed); 
+                            slideshowInterval = setInterval(runRotationEngine, currentSpeed); 
                         }
                     }
                 }
@@ -244,6 +252,186 @@
             }
         });
 
+        function handleSlideshowUpdate() {
+            if (isLeaderboardShowing) return;
+
+            const welcomeMsg = document.getElementById('welcome-msg');
+            const renderTarget = document.getElementById('render-target');
+            const voteBadge = document.getElementById('master-vote-badge');
+
+            if (photosArray.length === 0) {
+                welcomeMsg.style.display = 'block';
+                renderTarget.innerHTML = '';
+                voteBadge.classList.remove('show-block');
+                clearInterval(slideshowInterval);
+                slideshowInterval = null;
+                return;
+            }
+
+            welcomeMsg.style.display = 'none';
+
+            if (!slideshowInterval) {
+                currentIndex = 0;
+                renderEngineTick();
+                slideshowInterval = setInterval(runRotationEngine, currentSpeed);
+            } else {
+                renderEngineTick(); // Instantly apply layout modifications mid-cycle
+            }
+        }
+
+        function runRotationEngine() {
+            if (photosArray.length <= 1 || isLeaderboardShowing) return;
+            
+            // Advance timeline markers based on current structural layout footprint weights
+            if (targetLayoutProfile === "classic" || targetLayoutProfile === "polaroid") {
+                currentIndex = (currentIndex + 1) % photosArray.length;
+            } else if (targetLayoutProfile === "split" && photosArray.length >= 2) {
+                currentIndex = (currentIndex + 2) % photosArray.length;
+            } else {
+                currentIndex = (currentIndex + 1) % photosArray.length;
+            }
+            
+            renderEngineTick();
+        }
+
+        // =============================================================
+        // MASTER RENDERING CIRCUIT & CRITICAL FALLBACK AUTOMATION ENGINE
+        // =============================================================
+        function renderEngineTick() {
+            if (isLeaderboardShowing || photosArray.length === 0) return;
+
+            const container = document.getElementById('render-target');
+            const wrapper = document.getElementById('slideshow-wrapper');
+            const voteBadge = document.getElementById('master-vote-badge');
+            const voteText = document.getElementById('master-vote-text');
+
+            // 1. EXECUTE CRITICAL FALLBACK COMPUTATION CIRCUITS
+            let runtimeLayout = targetLayoutProfile;
+            const count = photosArray.length;
+
+            if (runtimeLayout === "mosaic" && count < 4) {
+                runtimeLayout = count >= 2 ? "split" : "classic";
+            }
+            if (runtimeLayout === "split" && count < 2) {
+                runtimeLayout = "classic";
+            }
+            if ((runtimeLayout === "reel" || runtimeLayout === "comic") && count < 3) {
+                runtimeLayout = "classic";
+            }
+
+            // 2. STAMP MASTER OVERRIDE IDENTIFIERS FOR GLOBAL CSS HOOKS
+            wrapper.className = "slideshow-container layout-" + runtimeLayout;
+
+            // Normalize safely against bounds
+            if (currentIndex >= count) currentIndex = 0;
+            const currentItem = photosArray[currentIndex];
+
+            // 3. EXECUTE SEMANTIC CODE GENERATION ROUTINES
+            let htmlPayload = "";
+
+            if (runtimeLayout === "classic" || runtimeLayout === "polaroid") {
+                voteBadge.classList.add('show-block');
+                voteText.textContent = currentItem.likes;
+
+                const captionDiv = currentItem.caption ? `<div class="caption-solo">"${currentItem.caption}"</div>` : '';
+                htmlPayload = `
+                    <div class="render-frame-solo">
+                        <img class="img-solo" src="${currentItem.url}">
+                        ${captionDiv}
+                    </div>
+                `;
+            } 
+            else if (runtimeLayout === "split") {
+                voteBadge.classList.remove('show-block'); // Handled natively inline
+                const nextIndex = (currentIndex + 1) % count;
+                const p1 = photosArray[currentIndex];
+                const p2 = photosArray[nextIndex];
+
+                htmlPayload = `
+                    <div class="render-frame-split">
+                        <div class="split-col">
+                            <img src="${p1.url}">
+                            <div class="split-meta">
+                                <div class="split-caption">${p1.caption ? `"${p1.caption}"` : ''}</div>
+                                <div class="split-likes">❤️ ${p1.likes}</div>
+                            </div>
+                        </div>
+                        <div class="split-col">
+                            <img src="${p2.url}">
+                            <div class="split-meta">
+                                <div class="split-caption">${p2.caption ? `"${p2.caption}"` : ''}</div>
+                                <div class="split-likes">❤️ ${p2.likes}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } 
+            else if (runtimeLayout === "mosaic") {
+                voteBadge.classList.remove('show-block');
+                // Always pull the 4 absolute freshest images from storage arrays
+                htmlPayload = `<div class="render-frame-mosaic">`;
+                for (let i = 0; i < 4; i++) {
+                    if (photosArray[i]) {
+                        htmlPayload += `
+                            <div class="mosaic-cell">
+                                <img src="${photosArray[i].url}">
+                                <div class="split-meta" style="padding:12px;">
+                                    <div class="split-caption" style="font-size:16px;">${photosArray[i].caption ? `"${photosArray[i].caption}"` : ''}</div>
+                                    <div class="split-likes" style="font-size:14px; padding:3px 8px;">❤️ ${photosArray[i].likes}</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+                htmlPayload += `</div>`;
+            } 
+            else if (runtimeLayout === "reel") {
+                voteBadge.classList.remove('show-block');
+                htmlPayload = `<div class="render-frame-reel"><div class="film-strip-track">`;
+                // Double layout mapping stack to guarantee perfectly continuous css wrapping tracks
+                let renderPool = [...photosArray, ...photosArray];
+                if (renderPool.length < 8) renderPool = [...renderPool, ...renderPool];
+                
+                renderPool.forEach(item => {
+                    htmlPayload += `
+                        <div class="film-cell">
+                            <img src="${item.url}">
+                            <div class="split-meta" style="padding:10px;">
+                                <div class="split-caption" style="font-size:14px;">${item.caption ? `"${item.caption}"` : ''}</div>
+                                <div class="split-likes" style="font-size:12px; padding:2px 6px;">❤️ ${item.likes}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                htmlPayload += `</div></div>`;
+            } 
+            else if (runtimeLayout === "comic") {
+                voteBadge.classList.remove('show-block');
+                htmlPayload = `<div class="render-frame-comic">`;
+                // Map top 3 items straight into angled pop-art frames
+                for(let i = 0; i < 3; i++) {
+                    const idx = (currentIndex + i) % count;
+                    const item = photosArray[idx];
+                    if (item) {
+                        const bubble = item.caption ? `<div class="comic-bubble">"${item.caption}"</div>` : '';
+                        htmlPayload += `
+                            <div class="comic-panel">
+                                <img src="${item.url}">
+                                ${bubble}
+                                <div class="split-meta" style="padding:15px; background:linear-gradient(transparent, #000 90%);">
+                                    <div class="split-likes" style="background:#fff; color:#000; border:3px solid #000; font-size:18px; box-shadow:2px 2px 0 #000; border-radius:0px;">POW! ❤️ ${item.likes}</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+                htmlPayload += `</div>`;
+            }
+
+            // 4. BLAST INJECT GENERATED LAYOUTS DIRECTLY INTO TV HARDWARE
+            container.innerHTML = htmlPayload;
+        }
+
         function triggerLeaderboardTakeover() {
             if (photosArray.length === 0 || isLeaderboardShowing || !isLeaderboardConfigActive) return;
 
@@ -252,6 +440,8 @@
             slideshowInterval = null;
             document.getElementById('ticker-bar').style.display = 'none';
             document.getElementById('tv-qr-card').style.display = 'none';
+            document.getElementById('master-vote-badge').classList.remove('show-block');
+            document.getElementById('render-target').innerHTML = '';
 
             let rankedArray = [...photosArray].sort((a, b) => b.likes - a.likes);
 
@@ -300,96 +490,6 @@
             
             if (globalTickerVisible) document.getElementById('ticker-bar').style.display = 'block';
             handleSlideshowUpdate();
-        }
-
-        function handleSlideshowUpdate() {
-            if (isLeaderboardShowing) return;
-
-            if (photosArray.length === 0) {
-                document.getElementById('welcome-msg').style.display = 'block';
-                document.getElementById('display-img-1').src = transparentPixel;
-                document.getElementById('display-img-2').src = transparentPixel;
-                document.getElementById('display-img-1').classList.remove('active');
-                document.getElementById('display-img-2').classList.remove('active');
-                document.getElementById('vote-badge-1').classList.remove('active');
-                document.getElementById('vote-badge-2').classList.remove('active');
-                document.getElementById('caption-overlay-1').classList.remove('active');
-                document.getElementById('caption-overlay-2').classList.remove('active');
-                clearInterval(slideshowInterval);
-                slideshowInterval = null;
-                return;
-            }
-
-            document.getElementById('welcome-msg').style.display = 'none';
-
-            if (slideshowInterval && photosArray[currentIndex]) {
-                document.getElementById('vote-text-' + activeToggle).textContent = photosArray[currentIndex].likes;
-                // Dynamically refresh live caption adjustments if text fields change in-memory
-                const captionOverlay = document.getElementById('caption-overlay-' + activeToggle);
-                if (photosArray[currentIndex].caption) {
-                    captionOverlay.textContent = photosArray[currentIndex].caption;
-                    captionOverlay.classList.add('active');
-                } else {
-                    captionOverlay.classList.remove('active');
-                }
-            }
-
-            if (!slideshowInterval) {
-                const activeImg = document.getElementById('display-img-' + activeToggle);
-                const activeBadge = document.getElementById('vote-badge-' + activeToggle);
-                const activeText = document.getElementById('vote-text-' + activeToggle);
-                const activeCaption = document.getElementById('caption-overlay-' + activeToggle);
-                
-                activeImg.src = photosArray[0].url;
-                activeText.textContent = photosArray[0].likes;
-                
-                if (photosArray[0].caption) {
-                    activeCaption.textContent = photosArray[0].caption;
-                    activeCaption.classList.add('active');
-                } else {
-                    activeCaption.classList.remove('active');
-                }
-
-                activeImg.classList.add('active');
-                activeBadge.classList.add('active');
-                
-                currentIndex = 0;
-                slideshowInterval = setInterval(runRotation, currentSpeed);
-            }
-        }
-
-        function runRotation() {
-            if (photosArray.length <= 1 || isLeaderboardShowing) return;
-
-            currentIndex = (currentIndex + 1) % photosArray.length;
-            const nextData = photosArray[currentIndex];
-
-            const currentImg = document.getElementById('display-img-' + activeToggle);
-            const currentBadge = document.getElementById('vote-badge-' + activeToggle);
-            const currentCaption = document.getElementById('caption-overlay-' + activeToggle);
-            
-            activeToggle = activeToggle === 1 ? 2 : 1;
-            
-            const nextImg = document.getElementById('display-img-' + activeToggle);
-            const nextBadge = document.getElementById('vote-badge-' + activeToggle);
-            const nextText = document.getElementById('vote-text-' + activeToggle);
-            const nextCaption = document.getElementById('caption-overlay-' + activeToggle);
-
-            nextImg.src = nextData.url;
-            nextText.textContent = nextData.likes;
-            
-            if (nextData.caption) {
-                nextCaption.textContent = nextData.caption;
-                nextCaption.classList.add('active');
-            } else {
-                nextCaption.classList.remove('active');
-            }
-
-            nextImg.classList.add('active');
-            nextBadge.classList.add('active');
-            currentImg.classList.remove('active');
-            currentBadge.classList.remove('active');
-            currentCaption.classList.remove('active');
         }
     </script>
 </body>
