@@ -23,7 +23,18 @@
             position: relative;
         }
         
-    
+        .slide {
+            position: absolute;
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
         .slide.active { opacity: 1; }
 
         .welcome-screen {
@@ -74,8 +85,8 @@
             <h1>Caffe Bar Luna</h1>
             <p>Scan the QR code to post your photos here! 📸</p>
         </div>
-        <img id="display-img-1" class="slide" src="" alt="Slideshow image 1">
-        <img id="display-img-2" class="slide" src="" alt="Slideshow image 2">
+        <img id="display-img-1" class="slide" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="">
+        <img id="display-img-2" class="slide" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="">
     </div>
 
     <div class="marquee-container" id="ticker-bar">
@@ -102,6 +113,7 @@
         let currentIndex = 0;
         let slideshowInterval = null;
         let activeToggle = 1;
+        const transparentPixel = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
         // Listen for Approved Photos
         db.collection('photos')
@@ -138,6 +150,8 @@
         function handleSlideshowUpdate() {
             if (photosArray.length === 0) {
                 document.getElementById('welcome-msg').style.display = 'block';
+                document.getElementById('display-img-1').src = transparentPixel;
+                document.getElementById('display-img-2').src = transparentPixel;
                 document.getElementById('display-img-1').classList.remove('active');
                 document.getElementById('display-img-2').classList.remove('active');
                 clearInterval(slideshowInterval);
