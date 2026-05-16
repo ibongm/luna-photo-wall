@@ -86,11 +86,21 @@
         .btn-action { padding: 10px 15px; border: none; font-weight: bold; border-radius: 6px; cursor: pointer; }
         .btn-approve { background: #4caf50; color: white; }
         .btn-reject { background: #e50914; color: white; }
+        
         .btn-nuke {
             background-color: #e50914; color: white; border: none; padding: 12px;
             font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%;
         }
         .btn-nuke:hover { background-color: #b20710; }
+
+        /* Archive Button Style */
+        .btn-archive-toggle {
+            background-color: #333333; color: white; border: 1px solid #444; padding: 12px;
+            font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%;
+            margin-top: 15px; display: block; text-align: center;
+        }
+        .btn-archive-toggle:hover { background-color: #444; }
+        .btn-download { background: #007bff; color: white; flex: 1; }
 
         .queue-title { border-bottom: 2px solid #333; padding-bottom: 8px; margin-top: 25px; }
         .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
@@ -153,6 +163,12 @@
 
         <h3 class="queue-title">Pending Photos Approval Queue</h3>
         <div class="photo-grid" id="queue-container"></div>
+
+        <button class="btn-archive-toggle" id="archive-btn" onclick="toggleArchiveView()">📁 View History Archive</button>
+        <div id="archive-section" style="display: none;">
+            <h3 class="queue-title">All Uploaded Photos (Approved & Nuked)</h3>
+            <div class="photo-grid" id="archive-container"></div>
+        </div>
     </div>
 
     <script>
@@ -170,6 +186,8 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+
+        let archiveLoaded = false;
 
         initAdminPanel();
 
@@ -222,6 +240,76 @@
               });
         }
 
+        // On-demand fetch routine to load historical data safely
+        function toggleArchiveView() {
+            const archiveSection = document.getElementById('archive-section');
+            const archiveBtn = document.getElementById('archive-btn');
+
+            if (archiveSection.style.display === "none") {
+                archiveSection.style.display = "block";
+                archiveBtn.textContent = "📁 Close History Archive";
+                
+                // Only build database sync loop once to prevent duplicate readings
+                if (!archiveLoaded) {
+                    loadPhotoArchive();
+                    archiveLoaded = true;
+                }
+            } else {
+                archiveSection.style.display = "none";
+                archiveBtn.textContent = "📁 View History Archive";
+            }
+        }
+
+        function loadPhotoArchive() {
+            // Pull both live approved photos and previously "nuked" archived photos
+            db.collection('photos')
+              .where('status', 'in', ['approved', 'archived'])
+              .onSnapshot((snapshot) => {
+                  const archiveContainer = document.getElementById('archive-container');
+                  archiveContainer.innerHTML = '';
+
+                  if (snapshot.empty) {
+                      archiveContainer.innerHTML = '<p style="color:#aaa; grid-column: 1/-1; text-align:center;">The archive is currently empty.</p>';
+                      return;
+                  }
+
+                  let docsArray = [];
+                  snapshot.forEach(doc => { docsArray.push({ id: doc.id, ...doc.data() }); });
+
+                  // Sort archive by newest upload first
+                  docsArray.sort((a, b) => {
+                      const timeA = a.timestamp ? a.timestamp.seconds : 0;
+                      const timeB = b.timestamp ? b.timestamp.seconds : 0;
+                      return timeB - timeA;
+                  });
+
+                  docsArray.forEach(item => {
+                      const card = document.createElement('div');
+                      card.className = 'photo-card';
+                      
+                      // Render card layout with custom parameters passed straight to the download engine
+                      card.innerHTML = `
+                          <img src="${item.url}">
+                          <div style="font-size: 11px; color: #888; margin-top: 5px;">Status: ${item.status.toUpperCase()}</div>
+                          <div class="action-btns">
+                              <button class="btn-action btn-download" onclick="downloadBase64('${item.url}', 'luna_${item.id}.jpg')">📥 Download</button>
+                          </div>
+                      `;
+                      archiveContainer.appendChild(card);
+                  });
+              });
+        }
+
+        // Native download wrapper trick
+        function downloadBase64(base64Data, filename) {
+            const link = document.createElement('a');
+            link.href = base64Data;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         function updateStatus(docId, newStatus) {
             db.collection('photos').doc(docId).update({ status: newStatus });
         }
@@ -234,7 +322,6 @@
             db.collection('settings').doc('admin').set({ slideshowSpeed: parseInt(seconds) }, { merge: true });
         }
 
-        // Write the new layout theme selection to Firestore
         function updateTheme(themeName) {
             db.collection('settings').doc('admin').set({ colorTheme: themeName }, { merge: true });
         }
