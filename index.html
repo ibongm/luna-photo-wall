@@ -31,26 +31,44 @@
         h1 { margin-bottom: 10px; font-size: 28px; letter-spacing: 1px; }
         p { color: #aaa; font-size: 14px; margin-bottom: 30px; }
         
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+        }
         .upload-btn-wrapper {
             position: relative;
             overflow: hidden;
-            display: inline-block;
             width: 100%;
         }
         .btn {
-            border: 2px dashed #e50914;
             color: #ffffff;
             background-color: transparent;
-            padding: 20px;
+            padding: 18px;
             border-radius: 10px;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             width: 100%;
             cursor: pointer;
             transition: all 0.3s ease;
             box-sizing: border-box;
+            display: block;
         }
-        .btn:hover { background-color: rgba(229, 9, 20, 0.1); }
+        /* Camera Button Style */
+        .btn-camera {
+            border: 2px solid #e50914;
+            background-color: #e50914;
+        }
+        .btn-camera:hover { background-color: #b20710; border-color: #b20710; }
+        
+        /* Gallery Button Style */
+        .btn-gallery {
+            border: 2px dashed #444;
+            color: #ccc;
+        }
+        .btn-gallery:hover { border-color: #e50914; color: #fff; background-color: rgba(229, 9, 20, 0.05); }
+
         .upload-btn-wrapper input[type=file] {
             font-size: 100px;
             position: absolute;
@@ -58,9 +76,11 @@
             top: 0;
             opacity: 0;
             cursor: pointer;
+            width: 100%;
+            height: 100%;
         }
         #status {
-            margin-top: 20px;
+            margin-top: 25px;
             font-weight: bold;
             font-size: 16px;
             color: #e50914;
@@ -82,11 +102,18 @@
 
     <div class="container">
         <h1>Luna Photo Wall</h1>
-        <p>Snap a picture or pick one from your gallery to show it on the big screen!</p>
+        <p>Take a live shot at the bar or choose a favorite memory from your phone!</p>
         
-        <div class="upload-btn-wrapper">
-            <button class="btn" id="uploadBtn">📸 Choose / Take Photo</button>
-            <input type="file" id="imageInput" accept="image/*">
+        <div class="button-group">
+            <div class="upload-btn-wrapper">
+                <button class="btn btn-camera">📸 Snap Live Photo</button>
+                <input type="file" id="cameraInput" accept="image/*" capture="environment">
+            </div>
+
+            <div class="upload-btn-wrapper">
+                <button class="btn btn-gallery">📁 Choose from Gallery</button>
+                <input type="file" id="galleryInput" accept="image/*">
+            </div>
         </div>
 
         <img id="preview" src="" alt="Image preview">
@@ -110,22 +137,26 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        const imageInput = document.getElementById('imageInput');
+        const cameraInput = document.getElementById('cameraInput');
+        const galleryInput = document.getElementById('galleryInput');
         const statusDiv = document.getElementById('status');
         const previewImg = document.getElementById('preview');
 
-        imageInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
+        // Route both independent button listeners to the core processing engine
+        cameraInput.addEventListener('change', (e) => processFile(e.target.files[0]));
+        galleryInput.addEventListener('change', (e) => processFile(e.target.files[0]));
+
+        async function processFile(file) {
             if (!file) return;
 
-            // Show a local quick preview
+            // Show local preview immediately
             previewImg.src = URL.createObjectURL(file);
             previewImg.style.display = 'block';
             statusDiv.textContent = "Processing and optimizing image...";
             statusDiv.style.color = "#aaa";
 
             try {
-                // Convert and compress the live image directly to a lightweight Base64 text string
+                // Compress and encode photo to Base64 text string
                 const base64String = await new Promise((resolve) => {
                     const img = new Image();
                     img.src = URL.createObjectURL(file);
@@ -134,7 +165,6 @@
                         let width = img.width;
                         let height = img.height;
 
-                        // Max 800px ensures it looks crisp on TV but remains a tiny, lightning-fast text string
                         const MAX_DIM = 800;
                         if (width > height) {
                             if (width > MAX_DIM) {
@@ -153,20 +183,19 @@
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
 
-                        // Transform directly into optimized image text data
                         const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
                         resolve(dataUrl);
                     };
                 });
 
-                // Check if Moderation Mode is turned on
+                // Check Moderation State
                 let status = 'approved'; 
                 const adminSettings = await db.collection('settings').doc('admin').get();
                 if (adminSettings.exists && adminSettings.data().moderationMode === true) {
                     status = 'pending';
                 }
 
-                // Save the image text data directly into your free Firestore database
+                // Send clean text representation straight to database
                 await db.collection('photos').add({
                     url: base64String, 
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(),
@@ -186,7 +215,7 @@
                 statusDiv.textContent = "Upload failed. Please try again.";
                 statusDiv.style.color = "#e50914";
             }
-        });
+        }
     </script>
 </body>
 </html>
