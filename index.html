@@ -14,7 +14,6 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
             min-height: 100vh;
             box-sizing: border-box;
@@ -27,6 +26,7 @@
             border-radius: 15px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.5);
             border-top: 4px solid #e50914;
+            margin-bottom: 30px;
         }
         h1 { margin-bottom: 10px; font-size: 28px; letter-spacing: 1px; }
         p { color: #aaa; font-size: 14px; margin-bottom: 30px; }
@@ -55,44 +55,30 @@
             box-sizing: border-box;
             display: block;
         }
-        /* Camera Button Style */
-        .btn-camera {
-            border: 2px solid #e50914;
-            background-color: #e50914;
-        }
+        .btn-camera { background-color: #e50914; border: 2px solid #e50914; }
         .btn-camera:hover { background-color: #b20710; border-color: #b20710; }
         
-        /* Gallery Button Style */
-        .btn-gallery {
-            border: 2px dashed #444;
-            color: #ccc;
-        }
+        .btn-gallery { border: 2px dashed #444; color: #ccc; }
         .btn-gallery:hover { border-color: #e50914; color: #fff; background-color: rgba(229, 9, 20, 0.05); }
 
         .upload-btn-wrapper input[type=file] {
-            font-size: 100px;
-            position: absolute;
-            left: 0;
-            top: 0;
-            opacity: 0;
-            cursor: pointer;
-            width: 100%;
-            height: 100%;
+            font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
         }
-        #status {
-            margin-top: 25px;
-            font-weight: bold;
-            font-size: 16px;
-            color: #e50914;
-        }
-        #preview {
-            max-width: 100%;
-            max-height: 200px;
-            margin-top: 20px;
-            border-radius: 8px;
-            display: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
+        #status { margin-top: 25px; font-weight: bold; font-size: 16px; color: #e50914; }
+        #preview { max-width: 100%; max-height: 200px; margin-top: 20px; border-radius: 8px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+
+        /* NEW Public Gallery View Framework */
+        .gallery-section { max-width: 400px; width: 100%; text-align: left; }
+        .gallery-title { font-size: 20px; margin-bottom: 15px; border-bottom: 2px solid #2a2a2a; padding-bottom: 8px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+        .gallery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .gallery-card { background: #1e1e1e; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: flex; flex-direction: column; position: relative; }
+        .gallery-card img { width: 100%; height: 140px; object-fit: cover; }
+        
+        .like-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #252525; }
+        .like-count { font-size: 13px; font-weight: bold; color: #bbb; }
+        .like-btn { background: none; border: none; color: #ff3366; font-size: 18px; cursor: pointer; padding: 0; transition: transform 0.2s ease; }
+        .like-btn:active { transform: scale(1.4); }
+        .liked { color: #ff3366 !important; }
     </style>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -109,7 +95,6 @@
                 <button class="btn btn-camera">📸 Snap Live Photo</button>
                 <input type="file" id="cameraInput" accept="image/*" capture="environment">
             </div>
-
             <div class="upload-btn-wrapper">
                 <button class="btn btn-gallery">📁 Choose from Gallery</button>
                 <input type="file" id="galleryInput" accept="image/*">
@@ -118,6 +103,11 @@
 
         <img id="preview" src="" alt="Image preview">
         <div id="status"></div>
+    </div>
+
+    <div class="gallery-section">
+        <div class="gallery-title"><span>❤️ Tonight's Photo Feed</span><span style="font-size:12px; color:#666;">Tap heart to vote</span></div>
+        <div class="gallery-grid" id="public-feed"></div>
     </div>
 
     <script>
@@ -133,7 +123,6 @@
         };
         // =====================================
 
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
@@ -142,21 +131,75 @@
         const statusDiv = document.getElementById('status');
         const previewImg = document.getElementById('preview');
 
-        // Route both independent button listeners to the core processing engine
         cameraInput.addEventListener('change', (e) => processFile(e.target.files[0]));
         galleryInput.addEventListener('change', (e) => processFile(e.target.files[0]));
 
+        // Sync and stream approved updates to the public voting interface
+        db.collection('photos')
+          .where('status', '==', 'approved')
+          .onSnapshot((snapshot) => {
+              const feedContainer = document.getElementById('public-feed');
+              feedContainer.innerHTML = '';
+              
+              if (snapshot.empty) {
+                  feedContainer.innerHTML = '<p style="color:#666; grid-column: 1/-1; text-align:center; padding: 20px;">No photos on screen yet. Be the first!</p>';
+                  return;
+              }
+
+              let docsArray = [];
+              snapshot.forEach(doc => { docsArray.push({ id: doc.id, ...doc.data() }); });
+
+              // Sort feed by newest arrivals first
+              docsArray.sort((a, b) => {
+                  const timeA = a.timestamp ? a.timestamp.seconds : 0;
+                  const timeB = b.timestamp ? b.timestamp.seconds : 0;
+                  return timeB - timeA;
+              });
+
+              // Pull local device memory index to track already liked photos
+              const likedPhotos = JSON.parse(localStorage.getItem('luna_liked_ids') || '[]');
+
+              docsArray.forEach(item => {
+                  const isLiked = likedPhotos.includes(item.id);
+                  const card = document.createElement('div');
+                  card.className = 'gallery-card';
+                  card.innerHTML = `
+                      <img src="${item.url}">
+                      <div class="like-bar">
+                          <span class="like-count" id="count-${item.id}">❤️ ${item.likes || 0} ${item.likes === 1 ? 'vote' : 'votes'}</span>
+                          <button class="like-btn" onclick="votePhoto('${item.id}')">${isLiked ? '❤️' : '🤍'}</button>
+                      </div>
+                  `;
+                  feedContainer.appendChild(card);
+              });
+          });
+
+        // Anti-spam hardware voting engine
+        function votePhoto(docId) {
+            let likedPhotos = JSON.parse(localStorage.getItem('luna_liked_ids') || '[]');
+            
+            if (likedPhotos.includes(docId)) {
+                alert("You've already voted for this photo! 😉");
+                return;
+            }
+
+            // Atomic increment passes straight to cloud firestore
+            db.collection('photos').doc(docId).update({
+                likes: firebase.firestore.FieldValue.increment(1)
+            }).then(() => {
+                likedPhotos.push(docId);
+                localStorage.setItem('luna_liked_ids', JSON.stringify(likedPhotos));
+            }).catch(err => console.error("Voting failed: ", err));
+        }
+
         async function processFile(file) {
             if (!file) return;
-
-            // Show local preview immediately
             previewImg.src = URL.createObjectURL(file);
             previewImg.style.display = 'block';
             statusDiv.textContent = "Processing and optimizing image...";
             statusDiv.style.color = "#aaa";
 
             try {
-                // Compress and encode photo to Base64 text string
                 const base64String = await new Promise((resolve) => {
                     const img = new Image();
                     img.src = URL.createObjectURL(file);
@@ -164,42 +207,29 @@
                         const canvas = document.createElement('canvas');
                         let width = img.width;
                         let height = img.height;
-
                         const MAX_DIM = 800;
                         if (width > height) {
-                            if (width > MAX_DIM) {
-                                height = Math.round((height * MAX_DIM) / width);
-                                width = MAX_DIM;
-                            }
+                            if (width > MAX_DIM) { height = Math.round((height * MAX_DIM) / width); width = MAX_DIM; }
                         } else {
-                            if (height > MAX_DIM) {
-                                width = Math.round((width * MAX_DIM) / height);
-                                height = MAX_DIM;
-                            }
+                            if (height > MAX_DIM) { width = Math.round((width * MAX_DIM) / height); height = MAX_DIM; }
                         }
-
                         canvas.width = width;
                         canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
-                        resolve(dataUrl);
+                        resolve(canvas.toDataURL('image/jpeg', 0.5));
                     };
                 });
 
-                // Check Moderation State
                 let status = 'approved'; 
                 const adminSettings = await db.collection('settings').doc('admin').get();
-                if (adminSettings.exists && adminSettings.data().moderationMode === true) {
-                    status = 'pending';
-                }
+                if (adminSettings.exists && adminSettings.data().moderationMode === true) { status = 'pending'; }
 
-                // Send clean text representation straight to database
                 await db.collection('photos').add({
                     url: base64String, 
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    status: status
+                    status: status,
+                    likes: 0 // Initialize structure tracking parameters securely
                 });
 
                 if (status === 'pending') {
@@ -209,7 +239,6 @@
                     statusDiv.textContent = "Sent successfully! Look at the TV screen! 🎉";
                     statusDiv.style.color = "#4caf50";
                 }
-
             } catch (error) {
                 console.error(error);
                 statusDiv.textContent = "Upload failed. Please try again.";

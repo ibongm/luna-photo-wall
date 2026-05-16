@@ -5,87 +5,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Luna TV - Photo Slideshow</title>
     <style>
-        /* CSS root variable setup to enable live software color shifting */
         :root {
-            --theme-accent: #e50914; /* Defaults directly to classic Luna Red */
+            --theme-accent: #e50914;
         }
 
         body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #000000;
-            overflow: hidden;
-            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000000; overflow: hidden; font-family: 'Segoe UI', Arial, sans-serif;
         }
         .slideshow-container {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
+            width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; position: relative;
         }
         
         .slide {
-            position: absolute;
-            max-width: 100%;
-            max-height: 100%;
-            width: auto;
-            height: auto;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            opacity: 0;
-            transition: opacity 1s ease-in-out;
+            position: absolute; max-width: 100%; max-height: 100%; width: auto; height: auto; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0; transition: opacity 1s ease-in-out;
         }
         .slide.active { opacity: 1; }
 
-        .welcome-screen {
+        /* NEW Floating Live Vote Badge Overlays */
+        .vote-badge {
             position: absolute;
-            color: white;
-            text-align: center;
-            z-index: 10;
+            top: 40px;
+            right: 40px;
+            background: rgba(0, 0, 0, 0.75);
+            border: 2px solid var(--theme-accent);
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 36px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 1s ease-in-out, border-color 0.5s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
-        /* Tied text element accent highlights straight to the live variable engine */
-        .welcome-screen h1 { 
-            font-size: 64px; 
-            margin-bottom: 10px; 
-            color: var(--theme-accent); 
-            text-shadow: 0 4px 10px rgba(0,0,0,0.8); 
-            transition: color 0.5s ease;
-        }
+        .vote-badge.active { opacity: 1; }
+        .vote-badge span { color: var(--theme-accent); transition: color 0.5s ease; }
+
+        .welcome-screen { position: absolute; color: white; text-align: center; z-index: 10; }
+        .welcome-screen h1 { font-size: 64px; margin-bottom: 10px; color: var(--theme-accent); text-shadow: 0 4px 10px rgba(0,0,0,0.8); transition: color 0.5s ease; }
         .welcome-screen p { font-size: 28px; color: #aaa; margin: 0; }
 
-        /* Smooth Scrolling Marquee Ticker */
         .marquee-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            border-top: 3px solid var(--theme-accent);
-            color: #ffffff;
-            padding: 15px 0;
-            font-size: 32px;
-            font-weight: bold;
-            overflow: hidden;
-            white-space: nowrap;
-            box-sizing: border-box;
-            z-index: 99999;
-            display: none;
-            transition: border-color 0.5s ease;
+            position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0, 0, 0, 0.85); border-top: 3px solid var(--theme-accent); color: #ffffff; padding: 15px 0; font-size: 32px; font-weight: bold; overflow: hidden; white-space: nowrap; box-sizing: border-box; z-index: 99999; display: none; transition: border-color 0.5s ease;
         }
-        .marquee-text {
-            display: inline-block;
-            padding-left: 100%;
-            animation: scroll-marquee 25s linear infinite;
-        }
-        @keyframes scroll-marquee {
-            0% { transform: translate3d(0, 0, 0); }
-            100% { transform: translate3d(-100%, 0, 0); }
-        }
+        .marquee-text { display: inline-block; padding-left: 100%; animation: scroll-marquee 25s linear infinite; }
+        @keyframes scroll-marquee { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
     </style>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -98,8 +65,12 @@
             <h1>Caffe Bar Luna</h1>
             <p>Scan the QR code to post your photos here! 📸</p>
         </div>
+        
         <img id="display-img-1" class="slide" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="">
+        <div id="vote-badge-1" class="vote-badge"><span>❤️</span><span id="vote-text-1">0</span></div>
+        
         <img id="display-img-2" class="slide" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="">
+        <div id="vote-badge-2" class="vote-badge"><span>❤️</span><span id="vote-text-2">0</span></div>
     </div>
 
     <div class="marquee-container" id="ticker-bar">
@@ -129,13 +100,8 @@
         let currentSpeed = 5000;
         const transparentPixel = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
-        // Hex Code Mapping Matrix for dynamic accent injection
         const themePalette = {
-            'black-red': '#e50914',
-            'black-gold': '#d4af37',
-            'electric-cyber': '#00f0ff',
-            'pub-emerald': '#00a86b',
-            'sunset-lounge': '#ff5722'
+            'black-red': '#e50914', 'black-gold': '#d4af37', 'electric-cyber': '#00f0ff', 'pub-emerald': '#00a86b', 'sunset-lounge': '#ff5722'
         };
 
         // Listen for Approved Photos
@@ -151,42 +117,30 @@
                   return timeB - timeA;
               });
 
-              photosArray = docsArray.map(item => item.url);
+              // Process both url and live like metrics in structural objects
+              photosArray = docsArray.map(item => ({ url: item.url, likes: item.likes || 0 }));
               handleSlideshowUpdate();
           });
 
-        // Combined Live settings observer
+        // Live settings observer
         db.collection('settings').doc('admin').onSnapshot((doc) => {
             if (doc.exists) {
                 const data = doc.data();
-                
-                // 1. Process Color Theme Profiles
                 if (data.colorTheme && themePalette[data.colorTheme]) {
-                    const targetHex = themePalette[data.colorTheme];
-                    document.documentElement.style.setProperty('--theme-accent', targetHex);
+                    document.documentElement.style.setProperty('--theme-accent', themePalette[data.colorTheme]);
                 }
-                
-                // 2. Process Rotation Timeline Windows
                 if (data.slideshowSpeed) {
                     const newSpeed = data.slideshowSpeed * 1000;
                     if (newSpeed !== currentSpeed) {
                         currentSpeed = newSpeed;
-                        if (slideshowInterval) {
-                            clearInterval(slideshowInterval);
-                            slideshowInterval = setInterval(runRotation, currentSpeed);
-                        }
+                        if (slideshowInterval) { clearInterval(slideshowInterval); slideshowInterval = setInterval(runRotation, currentSpeed); }
                     }
                 }
-
-                // 3. Process Promo Ticker Text
                 const tickerBar = document.getElementById('ticker-bar');
                 const tickerText = document.getElementById('ticker-text');
                 if (data.tickerText && data.tickerText.trim() !== "") {
-                    tickerText.textContent = data.tickerText;
-                    tickerBar.style.display = 'block';
-                } else {
-                    tickerBar.style.display = 'none';
-                }
+                    tickerText.textContent = data.tickerText; tickerBar.style.display = 'block';
+                } else { tickerBar.style.display = 'none'; }
             }
         });
 
@@ -197,6 +151,8 @@
                 document.getElementById('display-img-2').src = transparentPixel;
                 document.getElementById('display-img-1').classList.remove('active');
                 document.getElementById('display-img-2').classList.remove('active');
+                document.getElementById('vote-badge-1').classList.remove('active');
+                document.getElementById('vote-badge-2').classList.remove('active');
                 clearInterval(slideshowInterval);
                 slideshowInterval = null;
                 return;
@@ -204,10 +160,20 @@
 
             document.getElementById('welcome-msg').style.display = 'none';
 
+            // Real-time live check: If an image is currently playing on screen, update its vote count live
+            if (slideshowInterval && photosArray[currentIndex]) {
+                document.getElementById('vote-text-' + activeToggle).textContent = photosArray[currentIndex].likes;
+            }
+
             if (!slideshowInterval) {
                 const activeImg = document.getElementById('display-img-' + activeToggle);
-                activeImg.src = photosArray[0];
+                const activeBadge = document.getElementById('vote-badge-' + activeToggle);
+                const activeText = document.getElementById('vote-text-' + activeToggle);
+                
+                activeImg.src = photosArray[0].url;
+                activeText.textContent = photosArray[0].likes;
                 activeImg.classList.add('active');
+                activeBadge.classList.add('active');
                 
                 currentIndex = 0;
                 slideshowInterval = setInterval(runRotation, currentSpeed);
@@ -218,15 +184,24 @@
             if (photosArray.length <= 1) return;
 
             currentIndex = (currentIndex + 1) % photosArray.length;
-            const nextImageSrc = photosArray[currentIndex];
+            const nextData = photosArray[currentIndex];
 
             const currentImg = document.getElementById('display-img-' + activeToggle);
+            const currentBadge = document.getElementById('vote-badge-' + activeToggle);
+            
             activeToggle = activeToggle === 1 ? 2 : 1;
+            
             const nextImg = document.getElementById('display-img-' + activeToggle);
+            const nextBadge = document.getElementById('vote-badge-' + activeToggle);
+            const nextText = document.getElementById('vote-text-' + activeToggle);
 
-            nextImg.src = nextImageSrc;
+            nextImg.src = nextData.url;
+            nextText.textContent = nextData.likes;
+            
             nextImg.classList.add('active');
+            nextBadge.classList.add('active');
             currentImg.classList.remove('active');
+            currentBadge.classList.remove('active');
         }
     </script>
 </body>
