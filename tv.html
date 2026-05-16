@@ -95,15 +95,25 @@
         const container = document.getElementById('slideshow-container');
         const placeholder = document.getElementById('placeholder');
 
-        // Real-time listener: Fires whenever the database changes (adds, deletes, nukes)
+        // Real-time listener: Bypasses database restrictions by sorting inside the browser
         db.collection('photos')
           .where('status', '==', 'approved')
-          .orderBy('timestamp', 'desc')
           .onSnapshot((snapshot) => {
-              photosArray = [];
+              let docsArray = [];
+              
               snapshot.forEach(doc => {
-                  photosArray.push(doc.data().url);
+                  docsArray.push(doc.data());
               });
+
+              // Sort items by time (newest first) safely in JavaScript
+              docsArray.sort((a, b) => {
+                  const timeA = a.timestamp ? a.timestamp.seconds : 0;
+                  const timeB = b.timestamp ? b.timestamp.seconds : 0;
+                  return timeB - timeA;
+              });
+
+              // Extract just the image strings for the slideshow loop
+              photosArray = docsArray.map(item => item.url);
 
               handleSlideshowUpdate();
           }, (error) => {
