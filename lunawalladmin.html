@@ -199,12 +199,12 @@
         // === PASTE YOUR SAME FIREBASE CONFIG OBJECT HERE ===
         const firebaseConfig = {
             apiKey: "AIzaSyACxw49eWeaIy-9Dieu0yaV28F7XdgG1hE",
-  authDomain: "lunaphotowall.firebaseapp.com",
-  projectId: "lunaphotowall",
-  storageBucket: "lunaphotowall.firebasestorage.app",
-  messagingSenderId: "890645449459",
-  appId: "1:890645449459:web:040fceaec5c2a9f6f60586",
-  measurementId: "G-53RH94EDMY"
+            authDomain: "lunaphotowall.firebaseapp.com",
+            projectId: "lunaphotowall",
+            storageBucket: "lunaphotowall.firebasestorage.app",
+            messagingSenderId: "890645449459",
+            appId: "1:890645449459:web:040fceaec5c2a9f6f60586",
+            measurementId: "G-53RH94EDMY"
         };
         // ===================================================
 
@@ -257,10 +257,17 @@
                       
                       const textAudit = item.caption ? `<div class="card-caption-audit">📝 "${item.caption}"</div>` : '';
 
+                      // Format the timestamp for the pending queue
+                      let timeString = "Unknown Time";
+                      if (item.timestamp) {
+                          timeString = item.timestamp.toDate().toLocaleString();
+                      }
+
                       card.innerHTML = `
                           <img src="${item.url}">
                           ${textAudit}
-                          <div class="action-btns">
+                          <div style="font-size: 11px; color: #aaa; margin-top: 5px; text-align:center;">🕒 ${timeString}</div>
+                          <div class="action-btns" style="margin-top: 10px;">
                               <button class="btn-action btn-approve" style="flex:1;" onclick="updateStatus('${item.id}', 'approved')">Approve</button>
                               <button class="btn-action btn-reject" style="flex:1;" onclick="updateStatus('${item.id}', 'rejected')">Delete</button>
                           </div>
@@ -315,9 +322,16 @@
                       
                       const textAudit = item.caption ? `<div class="card-caption-audit">📝 "${item.caption}"</div>` : '';
 
+                      // Format the timestamp for the history archive
+                      let timeString = "Unknown Time";
+                      if (item.timestamp) {
+                          timeString = item.timestamp.toDate().toLocaleString();
+                      }
+
                       card.innerHTML = `
                           <img src="${item.url}">
                           ${textAudit}
+                          <div style="font-size: 11px; color: #aaa; margin-top: 5px; text-align:center;">🕒 ${timeString}</div>
                           <div style="font-size: 11px; color: #888; margin-top: 5px; text-align:center;">Status: ${item.status.toUpperCase()} | ❤️ ${item.likes || 0}</div>
                           <div class="action-btns" style="margin-top:8px;">
                               <button class="btn-action btn-download" onclick="downloadBase64('${item.url}', 'luna_${item.id}.jpg')">📥 Save</button>
